@@ -33,16 +33,22 @@
 	</head>
 	<body>
 		<header id="toolbar">
-			<div id="nav">
+		
+			<h1 id="title">Offline Wiki</h1>
+
 				<div style="display: none" id="download">
 					<span id="status"><b>Initializing</b></span> <progress id="progress" value=""></progress>
 				</div>
-				<a href="?Special:Index">Index</a>
-				<a href="?Special:Random">Random</a>
 				<input type="text" placeholder="Search" autocomplete=off spellcheck=off  id="search">
-			</div>
-			
-			<h1 id="title">Offline Wiki</h1>
+
+        <div id="nav">
+          <input type="checkbox" id="source" onchange="loadArticle(document.title)"> <label for="source">Source</label>
+				  <a href="?Special:Index">Index</a>
+				  <a href="?Special:Random">Random</a>
+			  </div>
+			  
+			  <div id="outline">
+			  </div>
 		</header>
 		
 		<div id="autocomplete" class="autocomplete" style="display:none; position: fixed; right: 20px; top: 28px"></div>
@@ -67,7 +73,6 @@
 		<script src="js/slugfy.js"></script>
 		
 		<script src="js/render.js"></script>
-		<script src="js/highlyeffectivedrm.js"></script>
 		<script src="js/ui.js"></script>
 		<script src="js/damlev.js"></script>
 		<script src="js/fs.js"></script>

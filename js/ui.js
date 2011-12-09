@@ -1,7 +1,26 @@
+function findPos(obj) {
+	var curleft = curtop = 0;
+	if (obj.offsetParent) {
+	  do {
+			  curleft += obj.offsetLeft;
+			  curtop += obj.offsetTop;
+	  } while (obj = obj.offsetParent);
+	}
+	return [curleft,curtop];
+}
+function reposition(){
+  var sea = document.getElementById('search');
+  var p = findPos(sea);
+  document.getElementById('autocomplete').style.top = (p[1] + sea.offsetHeight - 1) + 'px';
+  document.getElementById('autocomplete').style.left = p[0] + 'px';
+  document.getElementById('autocomplete').style.width = (sea.offsetWidth - 2) + 'px';
+}
 function scoreResult(result, query){
   return damlev(result.substr(0, query.length), query) * 0.5 + damlev(result.substr(0, query.length).toLowerCase(), query.toLowerCase()) * 2 + Math.abs(query.length - result.length) * 0.1
 }
 var lastSearchTime = 0;
+
+reposition();
 autocomplete(document.getElementById('search'), document.getElementById('autocomplete'), function(query, callback){
 	if(accessibleIndex < 100) return callback(["Downloading... Please Wait"]);
 	runSearch(query, function(results){
@@ -17,7 +36,7 @@ autocomplete(document.getElementById('search'), document.getElementById('autocom
 			//return x.replace(new RegExp('('+query.split('').join('|')+')','gi'), '|$1|').replace(/((\|.\|){2,})/g, '<b>$1</b>').replace(/\|/g,'')
 			return x.replace(new RegExp('('+query.replace(/[^\w]/g, ' ').replace(/ +/g,'|')+')', 'gi'), '<b>$1</b>')
 		}))
-	})
+	}, true)
 }, function(query){
 	if(new Date - lastSearchTime > 3141){ //Pi! also 3sec is like google instant's magic number apparnetly too
 		document.title = query;
@@ -90,17 +109,46 @@ function loadArticle(query){
 		updateIndex();
 		return;
 	}
-	document.getElementById('title').innerText = "Loading "+query+"...";	
+	document.getElementById('title').innerText = "Loading...";	
+	reposition();
 	readArticle(query, function(title, text, pos){
 		document.title = title;
 		history.replaceState({}, '', '?'+title);
+		scrollTo(0,0);
 		document.getElementById('title').innerText = title;	
 		document.getElementById('content').innerHTML = parse_wikitext(text);
+		
+		var els = document.getElementById('content').querySelectorAll('h1,h2,h3,h4,h5,h6');
+		var ol = document.createElement('ol');
+		document.getElementById('outline').innerHTML = '';
+		document.getElementById('outline').appendChild(ol);
+		var lastnum = 2;
+		for(var i = 0; i < els.length; i++){
+		  if(els[i].innerText.replace(/[^\<\>\"\'\&;_%\+\=\[\]]/g,'').length > 1) continue;
+		  var num = parseInt(els[i].tagName.replace(/[^0-9]/g, ''));
+		  if(num > lastnum){
+		    var nol = document.createElement('ol');
+		    ol.appendChild(nol);
+		    ol = nol;
+		  }else if(num < lastnum){
+		    ol = ol.parentNode;
+		  }
+		  var lye = document.createElement('li');
+		  var lynk = document.createElement('a');
+		  lye.appendChild(lynk);
+		  els[i].id = els[i].innerText.replace(/[^\w]/g, '');
+		  lynk.href = '#'+els[i].id;
+		  lynk.innerText = els[i].innerText;
+		  ol.appendChild(lye);
+		  lastnum = num
+		}
+		
 		//document.getElementById('content').innerText = text;
 		if(pos) lastArticlePos = pos;
+		reposition();
 		//console.log(pos, accessibleIndex, pos/accessibleIndex);
 		//document.getElementById('slider').max = accessibleIndex;
-		//document.getElementById('slider').value = pos;
+		//document.getElementById('slider').value = pos;scroll
 	})
 }
 
@@ -116,15 +164,22 @@ function parse_wikitext(text){
 }
 */
 
-function runSearch(query, callback){
+function runSearch(query, callback, fuzzy){
 	binarySearch(slugfy(query), 0, accessibleIndex, 200, 800, defaultParser, function(low, high, res){
 		readIndex(low, high - low, function(text){
-			callback(text.split('\n').slice(1, -1).map(function(x){
+			callback(text.split('\n').slice(1, -1)
+			.filter(function(x){
+			  var parts = x.split(/\||\>/), title = parts[0], ptr = parts[1];
+			  return fuzzy || (title.toLowerCase().trim().replace(/[^a-z0-9]/g,'') == query.toLowerCase().trim().replace(/[^a-z0-9]/g,''))
+			})
+			.map(function(x){
 				var parts = x.split(/\||\>/), title = parts[0], ptr = parts[1];
 				return {title: title, pointer: /\>/.test(x) ? ptr : parse64(ptr), redirect: /\>/.test(x), score: scoreResult(title, query)}
 			}).sort(function(a, b){
 				return a.score - b.score
-			}), low)
+			}), low);
+			
+			
 				//var display = /\>/.test(x)?ptr:title;
 				//scoremap[display] = Math.min(scoremap[display] || Infinity, scoreResult(title, query));
 			})
@@ -148,7 +203,9 @@ var redirectCache = {};
 
 function findBlock(query, callback){
 	runSearch(query, function(results, pos){
-		if(results[0].redirect){
+		if(!results[0]){
+		  callback(query, 0, 0);
+		}else if(results[0].redirect){
 			findBlock(results[0].pointer, callback)
 		}else{
 			callback(results[0].title, results[0].pointer, pos)
@@ -169,6 +226,15 @@ document.body.onclick = function(e){
     }
     if(link){
       if(link.href.replace(/\?.*$/,'') == location.href.replace(/\?.*$/,'')){
+
+        
+
+        console.log(link.href);
+        console.log(link.href.replace(/\#.*$/,''))
+        console.log(location.href.replace(/\#.*$/,''));
+        if(unescape(link.href.replace(/\#.*$/,'')) == unescape(location.href.replace(/\#.*$/,''))){
+          return;
+        }
         e.preventDefault();
         history.pushState({}, '', link.href);
         loadArticle(decodeURIComponent(location.search.substr(1)))
@@ -192,6 +258,7 @@ function readArticle(query, callback){
 		readArticle(query, callback);
 	}, 10);
 	findBlock(query, function(title, position, location){
+	  title = title.trim();
 		if(articleCache[title]) return callback(title, articleCache[title], location);
 		readPage(position, function(){
 			callback(title, articleCache[title] || "==Page Not Found==", location);
@@ -209,12 +276,14 @@ function readPage(position, callback, blocksize){
   var starttime, endtime;
   worker.addEventListener('message', function(e){
     endtime = +new Date;
-    console.log(endtime - starttime);
+    console.log("Decompression time", endtime - starttime);
   	var block = e.data;
   	var re = /=([^=\n\#\<\>\[\]\|\{\}]+)=\n\n\n\n/g;
   	var matches = re.exec(block), lastIndex = 0;
+  	//console.log(block);
 		while (matches){
-			articleCache[matches[1]] = block.slice(re.lastIndex, (matches = re.exec(block))?matches.index:undefined)
+			articleCache[matches[1].trim()] = block.slice(re.lastIndex, (matches = re.exec(block))?matches.index:undefined)
+			//console.log(matches[1].trim())
 		}
   	callback();
   	//portal 2 is coming tomorrow so this is obligatory

@@ -1,6 +1,7 @@
 function autocomplete(text, div, callback, onselect){
 	var results = [], selected = null;
 	text.addEventListener('focus', function(){
+	  reposition();
 		if(results.length) div.style.display = '';
 	}, true);
 	text.addEventListener('input', function(){

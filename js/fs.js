@@ -1,3 +1,5 @@
+var indexsize = 2381261, dumpsize = 408427826;
+var indexurl = '/wikidata/popular100k/index.dump_old', dumpurl = '/wikidata/popular100k/dump.lzma';
 
 var index, dump;
 var accessibleIndex = 0;
@@ -56,7 +58,7 @@ function createBlobBuilder(){
 
 function initialize(){
 	console.log('initializing');
-	(window.requestFileSystem||window.webkitRequestFileSystem)(window.PERSISTENT, 5*1024*1024 /*10 GB*/, function(filesystem){
+	(window.requestFileSystem||window.webkitRequestFileSystem)(window.PERMANENT, 5*1024*1024 /*10 GB*/, function(filesystem){
 		fs = filesystem;
 		loadIndex(function(){
 			console.log('loaded index');
@@ -74,7 +76,7 @@ function initialize(){
 initialize();
 
 function updateAccessibleIndex(){
-	console.log('getting accessible index');
+	//console.log('getting accessible index');
 	downloadStatus(function(index, title){
 		console.log('accessible index: ', index);
 		accessibleIndex = index;
@@ -192,12 +194,12 @@ function downloadDump(){
 			updateDownloadStatus();
 			if(fileWriter.length < dumpsize){
 				requestChunk(dumpurl, fileWriter.length, function(buf){
-				  console.log("downloaded");
+				  //console.log("downloaded");
 					fileWriter.seek(fileWriter.length);
 					var bb = createBlobBuilder();
 					bb.append(buf);
 					fileWriter.write(bb.getBlob());
-					console.log('writing');
+					//console.log('writing');
 					downloadDump();
 					updateAccessibleIndex();
 				})
@@ -236,7 +238,7 @@ function requestChunk(url, pos, callback){
 	document.getElementById('download').style.display = '';
 	
 	var xhr = new XMLHttpRequest(); //resuse object
-	console.log('downloading ',url + "?"+Math.random(),'position',pos);
+	//console.log('downloading ',url + "?"+Math.random(),'position',pos);
 	xhr.open('GET', url+ "?"+Math.random(), true);
 	xhr.setRequestHeader('Range', 'bytes='+pos+'-'+(pos+chunksize));
 
@@ -246,11 +248,11 @@ function requestChunk(url, pos, callback){
 		console.log("got error")
 	}
 	xhr.onload = function(){
-	  console.log(xhr.status, xhr);
+	  //console.log(xhr.status, xhr);
 		if(xhr.status > 100 && xhr.status <= 400){
 		setTimeout(function(){
 			callback(xhr.response)
-		},500);
+		},5000);
 		}
 	}
 	xhr.send(null)
