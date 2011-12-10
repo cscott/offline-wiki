@@ -100,6 +100,7 @@ function loadArticle(query){
 		document.getElementById('title').innerText = "Index";	
 		document.title = "Index";
 		document.getElementById('content').innerHTML = "<input type=range id=slider> <div id=pageitems>";
+		//BTW, this thing for basing the step metric on is really stupid, revise.
 		var step = Math.floor(document.getElementById('content').scrollHeight*document.getElementById('content').scrollWidth/13 );
 		document.getElementById('slider').max = Math.floor(accessibleIndex/step)*step;
 		document.getElementById('slider').step = step;
@@ -271,7 +272,7 @@ document.body.onclick = function(e){
     }
     if(link){
       if(link.href.replace(/\?.*$/,'') == location.href.replace(/\?.*$/,'')){
-        if(unescape(link.href.replace(/\#.*$/,'')) == unescape(location.href.replace(/\#.*$/,''))){
+        if(unescape(link.href.replace(/\#.*$/,'')) == unescape(location.href.replace(/\#.*$/,'')) && unescape(link.href) != unescape(location.href)){
           console.log('exit');
           return true;
         }
