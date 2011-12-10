@@ -181,6 +181,16 @@ a.next, a.prev {
 }
 
 #download {
-	display: inline;
-	padding-right: 20px;
+	margin-right: 15px;
+	/*padding-right: 20px;*/
+}
+#download #status {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#download progress {
+  width: 100%;
+  margin-top: 10px;
+  display: block;
 }

@@ -1,6 +1,15 @@
-var indexsize = 2381261, dumpsize = 408427826;
-var indexurl = '/wikidata/popular100k/index.dump_old', dumpurl = '/wikidata/popular100k/dump.lzma';
-
+var indexsize, dumpsize, indexurl, dumpurl;
+if(location.host=='offline-wiki.googlecode.com'){
+  indexsize = 27509
+  dumpsize = 13688465;
+  indexurl = 'http://offline-wiki.googlecode.com/files/1337.new.index';
+  dumpurl = 'http://offline-wiki.googlecode.com/files/1337.lzma';
+}else{
+  indexsize = 27509
+  dumpsize = 13688465;
+  indexurl = '/Downloads/split2/1337.new.index'
+  dumpurl = '/Downloads/split2/1337.lzma';
+}
 var index, dump;
 var accessibleIndex = 0;
 var accessibleTitle = ''; //almost last accessible title
@@ -81,7 +90,7 @@ function updateAccessibleIndex(){
 		console.log('accessible index: ', index);
 		accessibleIndex = index;
 		accessibleTitle = title;
-		document.getElementById('status').innerHTML = '<b>Downloading</b> '+accessibleTitle;
+		document.getElementById('status').innerHTML = '<b>Downloading</b> <a href="?'+accessibleTitle+'">'+accessibleTitle+'</a>';
 	});
 }
 
@@ -108,6 +117,7 @@ function updateDownloadStatus(){
 	document.getElementById('progress').value = dump.size / dumpsize;
 	document.getElementById('download').title = (100 * dump.size / dumpsize).toFixed(5)+"%";
 }
+
 
 
 function downloadStatus(callback){
@@ -256,6 +266,16 @@ function requestChunk(url, pos, callback){
 		}
 	}
 	xhr.send(null)
+}
+
+
+function nero(){
+  fs.root.getFile('dump.index', {create: false}, function(fileEntry) {
+    fileEntry.remove(function(){console.log("removed index file")})
+  })
+  fs.root.getFile('dump.lzma', {create: false}, function(fileEntry) {
+    fileEntry.remove(function(){console.log("removed dump file")})
+  })
 }
 
 /*

@@ -61,7 +61,9 @@ function updateIndex(){
 	var val = document.getElementById('slider').value - 0;
 	var step = document.getElementById('slider').step - 0;
 	var max = document.getElementById('slider').max - 0;	
-	document.getElementById('title').innerText = "Index: Page "+(1+(val/step))+" of "+Math.floor(1+(max/step));	
+	lastArticlePos = val + step/2;
+	
+	document.getElementById('title').innerText = "Index: "+(1+(val/step))+" of "+Math.floor(1+(max/step));	
 	readIndex(val - 200, step + 200, function(text){
 		document.getElementById('pageitems').innerHTML = '<a href="javascript:incrementSlider(-1)" class="prev">Previous</a> / <a class="next" href="javascript:incrementSlider(1)">Next</a><br>' + text.split('\n').slice(1, -1).map(function(x){
 			var title = x.split(/\||>/)[0];
@@ -73,7 +75,7 @@ function updateIndex(){
 var lastArticlePos = 0;
 
 function loadArticle(query){
-	
+  lastArticle = query;
 	query = query.replace(/w(ikipedia)?:/,'');
 	if(query == ''){
 		return;
@@ -99,7 +101,7 @@ function loadArticle(query){
 		document.title = "Index";
 		document.getElementById('content').innerHTML = "<input type=range id=slider> <div id=pageitems>";
 		document.getElementById('slider').max = accessibleIndex;
-		var step = Math.floor(document.body.scrollHeight*document.body.scrollWidth/191.04);
+		var step = Math.floor(document.getElementById('content').scrollHeight*document.getElementById('content').scrollWidth/13 );
 		document.getElementById('slider').step = step;
 		document.getElementById('slider').value = Math.floor(lastArticlePos/step) * step;
 
@@ -293,14 +295,15 @@ onscroll = function(){
 }
 
 function selectOutline(){
-  var els = document.getElementById('content').querySelectorAll('h1,h2,h3,h4,h5,h6');
-  var i = 0;
-  while(findPos(els[i])[1] < scrollY){
-    i++;
-  }
   var z;
   while(z = document.querySelector('a.selected')) z.className = '';
-  els[i].link.className = 'selected';
+  
+  try{
+    var els = document.getElementById('content').querySelectorAll('h1,h2,h3,h4,h5,h6');
+    var i = 0;
+    while(findPos(els[i])[1] < scrollY) i++;
+    els[i].link.className = 'selected';
+  }catch(err){};
 }
 
 
@@ -317,6 +320,7 @@ function readArticle(query, callback){
 		if(articleCache[title]) return callback(title, articleCache[title], location);
 		readPage(position, function(){
 			callback(title, articleCache[title] || "==Page Not Found==", location);
+			
 		})
 	})
 }
