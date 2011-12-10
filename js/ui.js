@@ -101,7 +101,7 @@ function loadArticle(query){
 		document.title = "Index";
 		document.getElementById('content').innerHTML = "<input type=range id=slider> <div id=pageitems>";
 		var step = Math.floor(document.getElementById('content').scrollHeight*document.getElementById('content').scrollWidth/13 );
-		document.getElementById('slider').max = Math.ceil(accessibleIndex/step)*step;
+		document.getElementById('slider').max = Math.floor(accessibleIndex/step)*step;
 		document.getElementById('slider').step = step;
 		document.getElementById('slider').value = Math.floor(lastArticlePos/step) * step;
 
