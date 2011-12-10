@@ -1,3 +1,4 @@
+//stolen from quirksmode
 function findPos(obj) {
 	var curleft = curtop = 0;
 	if (obj.offsetParent) {
@@ -19,6 +20,7 @@ function scoreResult(result, query){
   return damlev(result.substr(0, query.length), query) * 0.5 + damlev(result.substr(0, query.length).toLowerCase(), query.toLowerCase()) * 2 + Math.abs(query.length - result.length) * 0.1
 }
 var lastSearchTime = 0;
+var lastArticle = '';
 
 reposition();
 autocomplete(document.getElementById('search'), document.getElementById('autocomplete'), function(query, callback){
@@ -40,6 +42,7 @@ autocomplete(document.getElementById('search'), document.getElementById('autocom
 }, function(query){
 	if(new Date - lastSearchTime > 3141){ //Pi! also 3sec is like google instant's magic number apparnetly too
 		document.title = query;
+		console.log("pushed state");
     history.pushState({}, '', '?'+query);
 	}
 	lastSearchTime = new Date;
@@ -78,11 +81,12 @@ function loadArticle(query){
 	if(query == 'Special:Random'){
 		//this is actually much more complicated than it needs to be. but its probably
 		//simpler this way and requires less reafactoring, so meh.
+		
 		readIndex(Math.floor(accessibleIndex * Math.random()), 400, function(text){
 			var title = text && text.split('\n')[1].split(/\||\>/)[0];
 			loadArticle(title);
-			document.title = title;
-      history.replaceState({}, '', '?'+title);
+			//document.title = title;
+      //history.replaceState({}, '', '?'+title);
 		});
 		document.getElementById('title').innerText = "Special:Random";	
 		return;
@@ -92,6 +96,7 @@ function loadArticle(query){
 			loadArticle(query);
 		}, 100);
 		document.getElementById('title').innerText = "Index";	
+		document.title = "Index";
 		document.getElementById('content').innerHTML = "<input type=range id=slider> <div id=pageitems>";
 		document.getElementById('slider').max = accessibleIndex;
 		var step = Math.floor(document.body.scrollHeight*document.body.scrollWidth/191.04);
@@ -112,9 +117,13 @@ function loadArticle(query){
 	document.getElementById('title').innerText = "Loading...";	
 	reposition();
 	readArticle(query, function(title, text, pos){
+	  lastArticle = title;
+	  
+		if(document.title != title){
+		  history.replaceState({}, '', '?'+title);
+  		scrollTo(0,0);
+		};
 		document.title = title;
-		history.replaceState({}, '', '?'+title);
-		scrollTo(0,0);
 		document.getElementById('title').innerText = title;	
 		document.getElementById('content').innerHTML = parse_wikitext(text);
 		
@@ -137,12 +146,13 @@ function loadArticle(query){
 		  var lynk = document.createElement('a');
 		  lye.appendChild(lynk);
 		  els[i].id = els[i].innerText.replace(/[^\w]/g, '');
+		  els[i].link = lynk;
 		  lynk.href = '#'+els[i].id;
 		  lynk.innerText = els[i].innerText;
 		  ol.appendChild(lye);
 		  lastnum = num
 		}
-		
+		selectOutline();
 		//document.getElementById('content').innerText = text;
 		if(pos) lastArticlePos = pos;
 		reposition();
@@ -214,7 +224,40 @@ function findBlock(query, callback){
 }
 
 
+var linkCache = {};
 
+function checkLink(){
+  var link = document.getElementById('content').querySelector('a:not(.checked)');
+  if(link && document.title != 'Index'){
+    var url = unescape(link.href.replace(/^.*\?|\#.*$/g,'')).toLowerCase().replace(/[^a-z0-9]/g,'');
+    link.className += ' checked ';
+    if(linkCache[url]){
+      if(linkCache[url] == -1){
+        link.className += ' new ';
+      }
+      checkLink()
+    }else{
+      runSearch(url, function(r){
+        linkCache[url] = -1;
+        r.forEach(function(e){
+          linkCache[e.title.toLowerCase().replace(/[^a-z0-9]/g,'')] = 1;
+        });
+        if(linkCache[url] == -1){
+          link.className += ' new '
+        }
+      }, true);
+      setTimeout(function(){
+        checkLink();
+      }, 141);      
+    }
+  }else{
+    setTimeout(function(){
+      checkLink();
+    }, 762);
+  }
+}
+
+checkLink();
 
 document.body.onclick = function(e){
   if(e.button == 0  ){
@@ -226,14 +269,9 @@ document.body.onclick = function(e){
     }
     if(link){
       if(link.href.replace(/\?.*$/,'') == location.href.replace(/\?.*$/,'')){
-
-        
-
-        console.log(link.href);
-        console.log(link.href.replace(/\#.*$/,''))
-        console.log(location.href.replace(/\#.*$/,''));
         if(unescape(link.href.replace(/\#.*$/,'')) == unescape(location.href.replace(/\#.*$/,''))){
-          return;
+          console.log('exit');
+          return true;
         }
         e.preventDefault();
         history.pushState({}, '', link.href);
@@ -244,8 +282,25 @@ document.body.onclick = function(e){
 }
 
 onpopstate = function(e){
+  var title = decodeURIComponent(location.search.substr(1));
+  if(lastArticle != title){
+    loadArticle(title)
+  } 
+}
 
-  loadArticle(decodeURIComponent(location.search.substr(1)))
+onscroll = function(){
+  selectOutline();
+}
+
+function selectOutline(){
+  var els = document.getElementById('content').querySelectorAll('h1,h2,h3,h4,h5,h6');
+  var i = 0;
+  while(findPos(els[i])[1] < scrollY){
+    i++;
+  }
+  var z;
+  while(z = document.querySelector('a.selected')) z.className = '';
+  els[i].link.className = 'selected';
 }
 
 

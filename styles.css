@@ -57,7 +57,7 @@ a:active {
 }
 
 a.new {
-  color: #C20;
+  color: #BA0000;
 }
 
 #titlebar {
@@ -152,6 +152,10 @@ a.new {
 
 #outline {
   margin-right: 15px;
+}
+
+#outline a.selected {
+  font-weight: bold;
 }
 
 #nav {
