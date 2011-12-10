@@ -1,11 +1,10 @@
-function parse_wikitext(block){
-if(document.getElementById('source').checked){
-  return block.replace(/(\n==+[^=]*?==+\n)/g, '\n$1\n').replace(/\n/g, '<br>')
-    .replace(/(""|''|\=\=+)(.*?)(""|''|\=\=+)/g, '<tt>$1$2$3</tt>')
-    .replace(/\[\[.*?\]\]/g, function(a){
-      return '<tt><a href="'+a.split('|')[0]+'">'+a+'</a></tt>'
-    });
+onmessage  = function(e){
+  postMessage(parse_wikitext(e.data));
 }
+
+function parse_wikitext(block){
+/*
+*/
 /*
 	var artpos = block.indexOf('='+title+'=\n\n\n\n');
   var article = block.substr(artpos);

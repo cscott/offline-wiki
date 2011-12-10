@@ -508,7 +508,6 @@ LZMA.decompress = function(properties, inStream, outStream, outSize){
 
   return true;
 };
-
 onmessage = function(e){
   var raw = e.data.slice(0, 13).split('').map(function(x){
     return x.charCodeAt(0)
@@ -545,3 +544,26 @@ onmessage = function(e){
 
   postMessage(decodeURIComponent( escape(s)));
 }
+/*
+
+onmessage = function(e){
+  var data = new Uint8Array(e.data);
+  var size = data.subarray(5, 13);
+  var int_size = size[0] | (size[1] << 8) | (size[2] << (8*2)) | (size[3] << (8*3)) | (size[4] << (8*4)) | (size[5] << (8*5));
+  var hptr = 0, dptr = 13;
+  var result = '';
+  LZMA.decompress({
+    readByte: function(){
+      return data[hptr++]
+    }
+  }, {
+    readByte: function(){
+      return data[dptr++]
+    }
+  }, {
+    writeByte: function(b){
+      result += String.fromCharCode(b)
+    }
+  }, int_size);
+  postMessage(decodeURIComponent(escape(result)))
+}*/

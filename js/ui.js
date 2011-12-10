@@ -126,43 +126,78 @@ function loadArticle(query){
 		  history.replaceState({}, '', '?'+title);
   		scrollTo(0,0);
 		};
+
+
 		document.title = title;
 		document.getElementById('title').innerText = title;	
-		document.getElementById('content').innerHTML = parse_wikitext(text);
-		
-		var els = document.getElementById('content').querySelectorAll('h1,h2,h3,h4,h5,h6');
-		var ol = document.createElement('ol');
-		document.getElementById('outline').innerHTML = '';
-		document.getElementById('outline').appendChild(ol);
-		var lastnum = 2;
-		for(var i = 0; i < els.length; i++){
-		  if(els[i].innerText.replace(/[^\<\>\"\'\&;_%\+\=\[\]]/g,'').length > 1) continue;
-		  var num = parseInt(els[i].tagName.replace(/[^0-9]/g, ''));
-		  if(num > lastnum){
-		    var nol = document.createElement('ol');
-		    ol.appendChild(nol);
-		    ol = nol;
-		  }else if(num < lastnum){
-		    ol = ol.parentNode;
-		  }
-		  var lye = document.createElement('li');
-		  var lynk = document.createElement('a');
-		  lye.appendChild(lynk);
-		  els[i].id = els[i].innerText.replace(/[^\w]/g, '');
-		  els[i].link = lynk;
-		  lynk.href = '#'+els[i].id;
-		  lynk.innerText = els[i].innerText;
-		  ol.appendChild(lye);
-		  lastnum = num
-		}
-		selectOutline();
-		//document.getElementById('content').innerText = text;
+
 		if(pos) lastArticlePos = pos;
 		reposition();
-		//console.log(pos, accessibleIndex, pos/accessibleIndex);
-		//document.getElementById('slider').max = accessibleIndex;
-		//document.getElementById('slider').value = pos;scroll
+    
+    renderWikitext(text, function(html){
+  		//var parse_start = +new Date;
+      document.getElementById('content').innerHTML = html;
+  		//console.log("Article Reflow time", +new Date - parse_start);      
+		  updateOutline();
+		  selectOutline();
+    });
+			
 	})
+}
+
+var renderWorker;
+function renderWikitext(text, callback){
+	if(renderWorker) renderWorker.terminate();
+	
+  if(document.getElementById('source').checked){
+    return callback(text.replace(/(\n==+[^=]*?==+\n)/g, '\n$1\n').replace(/\n/g, '<br>')
+      .replace(/(""|''|\=\=+)(.*?)(""|''|\=\=+)/g, '<tt>$1$2$3</tt>')
+      .replace(/\[\[.*?\]\]/g, function(a){
+        return '<tt><a href="'+a.split('|')[0]+'">'+a+'</a></tt>'
+      }));
+  }
+	
+	renderWorker = new Worker('js/render.js');
+	renderWorker.addEventListener('error', function(e){ 
+    console.log('Rendering error', e);
+  }, false);
+  var starttime, endtime;
+  renderWorker.addEventListener('message', function(e){
+    endtime = +new Date;
+    console.log("Render time", endtime - starttime);
+    callback(e.data);
+  }, false);
+	renderWorker.postMessage(text);
+	starttime = +new Date;
+}
+
+
+function updateOutline(){
+  var els = document.getElementById('content').querySelectorAll('h1,h2,h3,h4,h5,h6');
+	var ol = document.createElement('ol');
+	document.getElementById('outline').innerHTML = '';
+	document.getElementById('outline').appendChild(ol);
+	var lastnum = 2;
+	for(var i = 0; i < els.length; i++){
+	  if(els[i].innerText.replace(/[^\<\>\"\'\&;_%\+\=\[\]]/g,'').length > 1) continue;
+	  var num = parseInt(els[i].tagName.replace(/[^0-9]/g, ''));
+	  if(num > lastnum){
+	    var nol = document.createElement('ol');
+	    ol.appendChild(nol);
+	    ol = nol;
+	  }else if(num < lastnum){
+	    ol = ol.parentNode;
+	  }
+	  var lye = document.createElement('li');
+	  var lynk = document.createElement('a');
+	  lye.appendChild(lynk);
+	  els[i].id = els[i].innerText.replace(/[^\w]/g, '');
+	  els[i].link = lynk;
+	  lynk.href = '#'+els[i].id;
+	  lynk.innerText = els[i].innerText;
+	  ol.appendChild(lye);
+	  lastnum = num
+	}
 }
 
 /*
@@ -251,7 +286,7 @@ function checkLink(){
       }, true);
       setTimeout(function(){
         checkLink();
-      }, 141);      
+      }, 14);      
     }
   }else{
     setTimeout(function(){
@@ -273,7 +308,6 @@ document.body.onclick = function(e){
     if(link){
       if(link.href.replace(/\?.*$/,'') == location.href.replace(/\?.*$/,'')){
         if(unescape(link.href.replace(/\#.*$/,'')) == unescape(location.href.replace(/\#.*$/,'')) && unescape(link.href) != unescape(location.href)){
-          console.log('exit');
           return true;
         }
         e.preventDefault();
@@ -334,6 +368,7 @@ function readPage(position, callback, blocksize){
     console.log('LZMA decompression error', e);
   }, false);
   var starttime, endtime;
+  
   worker.addEventListener('message', function(e){
     endtime = +new Date;
     console.log("Decompression time", endtime - starttime);
@@ -351,7 +386,8 @@ function readPage(position, callback, blocksize){
   }, false);
 	fr.onload = function(){
 		worker.postMessage(fr.result);
-		starttime = +new Date;
 	}
 	fr.readAsBinaryString(blobSlice(dump, position, blocksize || 200000));
+	//fr.readAsArrayBuffer(blobSlice(dump, position, blocksize || 200000));
+	starttime = +new Date;
 }
