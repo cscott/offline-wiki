@@ -200,7 +200,7 @@ function readIndex(start, length, callback){
 function downloadDump(){
 	fs.root.getFile('dump.lzma', {create:true, exclusive: false}, function(fileEntry){
 		fileEntry.createWriter(function(fileWriter) {
-			document.getElementById('status').innerHTML = '<b>Downloading</b> '+accessibleTitle;
+  		document.getElementById('status').innerHTML = '<b>Downloading</b> <a href="?'+accessibleTitle+'">'+accessibleTitle+'</a>';
 			updateDownloadStatus();
 			if(fileWriter.length < dumpsize){
 				requestChunk(dumpurl, fileWriter.length, function(buf){
