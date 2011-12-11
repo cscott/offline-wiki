@@ -4,13 +4,14 @@ body {
   overflow-y: scroll;
   color: #111111;
   background-color: #e8e8e8;
+  background-image: url(image/bg.png);
   margin-right: 20px;
   margin-left: 20px;
   margin-top: 0px;
 }
 
 
-#content {
+#container {
   background-color: #fefdfc;
 	padding: 20px;
 	padding-top: 10px;
@@ -74,9 +75,9 @@ a.new {
 	position: fixed;
 	top: 0px;
 	left: 0;
-  background-color: #e8e8e8;
   margin: 15px;
 	/*
+  background-color: #e8e8e8;
 	padding: 4px;
 	padding-right: 20px;
 	padding-top: 9px;
@@ -91,11 +92,6 @@ a.new {
 #toolbar a:visited {
 	color: #0645AD !important;
 }
-
-#nav * {
-	padding-right: 10px;
-}
-
 
 
 
@@ -161,7 +157,15 @@ a.new {
 #nav {
 	padding: 5px;
 	padding-top: 20px;
+	text-align: center;
 }
+
+
+#nav * {
+	padding-right: 18px;
+}
+
+
 
 footer {
 	padding-top: 10px;
@@ -184,9 +188,9 @@ a.next, a.prev {
 	margin-right: 15px;
 	/*padding-right: 20px;*/
 }
-#download #status {
-  white-space: nowrap;
+#status {
   overflow: hidden;
+  white-space: nowrap;
   text-overflow: ellipsis;
 }
 #download progress {

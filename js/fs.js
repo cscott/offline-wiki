@@ -5,10 +5,10 @@ if(location.host=='offline-wiki.googlecode.com'){
   indexurl = 'http://offline-wiki.googlecode.com/files/1337.new.index';
   dumpurl = 'http://offline-wiki.googlecode.com/files/1337.lzma';
 }else{
-  indexsize = 27509
-  dumpsize = 13688465;
-  indexurl = '/Downloads/split2/1337.new.index'
-  dumpurl = '/Downloads/split2/1337.lzma';
+  indexsize = 27828
+  dumpsize = 13844855;
+  indexurl = '/Downloads/split2/1337-v2.index'
+  dumpurl = '/Downloads/split2/1337-v2.lzma';
 }
 var index, dump;
 var accessibleIndex = 0;
@@ -202,10 +202,11 @@ function downloadDump(){
 		fileEntry.createWriter(function(fileWriter) {
   		document.getElementById('status').innerHTML = '<b>Downloading</b> <a href="?'+accessibleTitle+'">'+accessibleTitle+'</a>';
 			updateDownloadStatus();
-			if(fileWriter.length < dumpsize){
-				requestChunk(dumpurl, fileWriter.length, function(buf){
+			var ptr = fileWriter.length;
+			if(ptr < dumpsize){
+				requestChunk(dumpurl, ptr, function(buf){
 				  //console.log("downloaded");
-					fileWriter.seek(fileWriter.length);
+					fileWriter.seek(ptr);
 					var bb = createBlobBuilder();
 					bb.append(buf);
 					fileWriter.write(bb.getBlob());
@@ -225,10 +226,10 @@ function downloadDump(){
 function downloadIndex(){
 	fs.root.getFile('dump.index', {create:true, exclusive: false}, function(fileEntry){
 		fileEntry.createWriter(function(fileWriter) {
-			if(fileWriter.length < indexsize){
-				requestChunk(indexurl, fileWriter.length, function(buf){
-				  console.log("meow");
-					fileWriter.seek(fileWriter.length);
+		  var ptr = fileWriter.length;
+			if(ptr < indexsize){
+				requestChunk(indexurl, ptr, function(buf){
+					fileWriter.seek(ptr);
 					var bb = createBlobBuilder();
 					bb.append(buf);
 					fileWriter.write(bb.getBlob());
@@ -260,9 +261,9 @@ function requestChunk(url, pos, callback){
 	xhr.onload = function(){
 	  //console.log(xhr.status, xhr);
 		if(xhr.status > 100 && xhr.status <= 400){
-		setTimeout(function(){
+//		setTimeout(function(){
 			callback(xhr.response)
-		},5000);
+//		},5000);
 		}
 	}
 	xhr.send(null)

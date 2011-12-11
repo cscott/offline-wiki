@@ -32,7 +32,6 @@ function autocomplete(text, div, callback, onselect){
 		if(e.target.className == 'item') select(e.target);
 	}, true);
 	div.addEventListener('click', function(e){
-		console.log(e.target);
 		if(/item/.test(e.target.className)){
 		 select(e.target);
 		 onselect(selected.innerText);
