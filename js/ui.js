@@ -24,7 +24,7 @@ function scoreResult(result, query){
   */
   var censor = /shit|piss|fuck|cunt|tits|sex|anal|cunnilingus|hentai|penis|vagina/i.test(result) ? Math.E : 0;
   var score = damlev(result.substr(0, query.length), query) * 0.5 + damlev(result.substr(0, query.length).toLowerCase(), query.toLowerCase()) * 2 + Math.abs(query.length - result.length) * 0.1;
-  console.log(result, query, score, censor);
+  //console.log(result, query, score, censor);
   return score + censor;
 }
 var lastSearchTime = 0;
@@ -88,6 +88,16 @@ function loadArticle(query){
 	if(query == ''){
 		return;
 	}
+
+	if(query == 'Special:Settings'){
+    document.getElementById('settings').style.display = ''
+    document.getElementById('content').style.display = 'none'
+		document.title = document.getElementById('title').innerText = "Settings";	
+		
+	  return;
+	}
+  document.getElementById('settings').style.display = 'none'
+  document.getElementById('content').style.display = ''
 	if(query == 'Special:Random'){
 		//this is actually much more complicated than it needs to be. but its probably
 		//simpler this way and requires less reafactoring, so meh.
@@ -282,6 +292,7 @@ function checkLink(){
   var link;
   while(link = document.getElementById('content').querySelector('a:not(.checked)')){
     var url = unescape(link.href.replace(/^.*\?|\#.*$/g,'')).toLowerCase().replace(/[^a-z0-9]/g,'');
+    //console.log(url);
     if(linkCache[url]){
       if(linkCache[url] == -1){
         link.className += ' new ';
@@ -299,7 +310,7 @@ function checkLinkUncached(){
     runSearch(url, function(r){
       linkCache[url] = -1;
       r.forEach(function(e){
-        linkCache[e.toLowerCase().replace(/[^a-z0-9]/g,'')] = 1;
+        linkCache[e.replace(/(>|\|).*$/g,'').toLowerCase().replace(/[^a-z0-9]/g,'')] = 1;
       });
       if(linkCache[url] == -1){
         link.className += ' new '
@@ -401,7 +412,7 @@ function readPage(position, callback, blocksize){
 	fr.onload = function(){
 		worker.postMessage(fr.result);
 	}
-	fr.readAsBinaryString(blobSlice(dump, position, blocksize || 200000));
-	//fr.readAsArrayBuffer(blobSlice(dump, position, blocksize || 200000));
+	//fr.readAsBinaryString(blobSlice(dump, position, blocksize || 200000));
+	fr.readAsArrayBuffer(blobSlice(dump, position, blocksize || 200000));
 	starttime = +new Date;
 }
