@@ -22,7 +22,7 @@ function scoreResult(result, query){
   /*
     penalize explicit results to restore some semblance of faith in humanity
   */
-  var censor = /shit|piss|fuck|cunt|tits|sex|anal|cunnilingus|hentai|penis|vagina/i.test(result) ? Math.E : 0;
+  var censor = /shit|piss|fuck|cunt|tits|sex|anal|cunnilingus|hentai|penis|vagina|ejaculation/i.test(result) ? Math.E : 0;
   var score = damlev(result.substr(0, query.length), query) * 0.5 + damlev(result.substr(0, query.length).toLowerCase(), query.toLowerCase()) * 2 + Math.abs(query.length - result.length) * 0.1;
   //console.log(result, query, score, censor);
   return score + censor;
@@ -85,6 +85,7 @@ var lastArticlePos = 0;
 function loadArticle(query){
   lastArticle = query;
 	query = query.replace(/w(ikipedia)?:/,'');
+	query = query.replace(/_/g, ' ');
 	if(query == ''){
 		return;
 	}
@@ -242,7 +243,7 @@ function runSearch(query, callback, fuzzy){
 			});
 			if(fuzzy != 2){
 			  results = results.map(function(x){
-				  var parts = x.split(/\||\>/), title = parts[0], ptr = parts[1];
+				  var parts = x.split(/\||\>/), title = parts[0].replace(/_/g, ' '), ptr = parts[1];
 				  return {title: title, pointer: /\>/.test(x) ? ptr : parse64(ptr), redirect: /\>/.test(x), score: scoreResult(title, query)}
 			  }).sort(function(a, b){
 				  return a.score - b.score

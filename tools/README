@@ -1,0 +1,18 @@
+It's already happened before, I wrote all these utilities and forgot how to use them. In what order and what it does.
+
+bzip2 -dc pagecounts-2011-08-all.bz2 | grep '^en.z' | sed 's/ [^ ]*$//g' | sed -e '/ [1-9]$/d' | sed -e '/%5B/d' | sed -e 's/^en.z //' > output.txt
+
+cat output.txt | sort -rnk 2 > sorted.txt
+
+cat sorted.txt | sed -e 's/%3A/:/g' -e '/^Special:/d' -e '/^File:/d' -e '/^Talk:/d' -e '/^User:/d' -e '/^Images:/d' -e '/^Image:/d' -e '/^Category:/d'> nofiles.txt
+
+
+cat nofiles.txt | head -n 100000 > top100k.txt
+
+
+bzcat enwiki-20111201-pages-articles.xml.bz2 | python parse.py > popular_articles.txt
+
+
+python index.py < articles_1337.txt | sort | python create_sorted.py > sorted_1337.txt
+
+python mindex.py < sorted_1337.txt
