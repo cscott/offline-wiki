@@ -5,10 +5,15 @@ if(location.host=='offline-wiki.googlecode.com'){
   indexurl = 'http://offline-wiki.googlecode.com/files/1337.new.index';
   dumpurl = 'http://offline-wiki.googlecode.com/files/1337.lzma';
 }else{
-  indexsize = 27828
-  dumpsize = 13844855;
-  indexurl = '/Downloads/split2/1337-v2.index'
-  dumpurl = '/Downloads/split2/1337-v2.lzma';
+  indexsize = 7924566;
+  dumpsize = 1025405491;
+  indexurl = '/Downloads/split2/pi.index'
+  dumpurl = function(ptr){
+    var CHUNK_SIZE = 100000000;
+    return ['/Downloads/split2/splitpi/pi_' +
+    'aa,ab,ac,ad,ae,af,ag,ah,ai,aj,ak'.split(',')[Math.floor(ptr / CHUNK_SIZE)],
+      ptr % CHUNK_SIZE];
+  }
 }
 var index, dump;
 var accessibleIndex = 0;
@@ -74,23 +79,45 @@ function initialize(){
 			loadDump(function(){
 				console.log('loaded dump');
 				updateAccessibleIndex();
-				downloadIndex();
-				downloadDump();
+				setTimeout(function(){
+				  if(can_download){
+				    downloadIndex();
+				    downloadDump();
+				  }else{
+				    console.log("not downloading dump");
+				  }
+				}, 1000);
 			});
 		});
 	}, errorHandler);
 }
-
+var can_download = true;
+var concurrencyKey = +new Date;
+localStorage.checkConcurrency = concurrencyKey;
+onstorage = function(e){
+  if(e.key == "checkConcurrency"){
+    if(can_download){
+      if(+e.newValue < +concurrencyKey){
+        can_download = false;
+      }else{
+        localStorage.checkConcurrency = concurrencyKey;
+      }
+    }
+  }
+}
 
 initialize();
-
+var last_download_update = 0;
 function updateAccessibleIndex(){
 	//console.log('getting accessible index');
 	downloadStatus(function(index, title){
 		console.log('accessible index: ', index);
 		accessibleIndex = index;
 		accessibleTitle = title;
-		document.getElementById('status').innerHTML = '<b>Downloading</b> <a href="?'+accessibleTitle+'">'+accessibleTitle+'</a>';
+		if(new Date - last_download_update > 1000){
+  		document.getElementById('status').innerHTML = '<b>Downloading</b> <a href="?'+accessibleTitle+'">'+accessibleTitle+'</a>';
+			last_download_update = +new Date;
+		}
 	});
 }
 
@@ -200,11 +227,12 @@ function readIndex(start, length, callback){
 function downloadDump(){
 	fs.root.getFile('dump.lzma', {create:true, exclusive: false}, function(fileEntry){
 		fileEntry.createWriter(function(fileWriter) {
-  		document.getElementById('status').innerHTML = '<b>Downloading</b> <a href="?'+accessibleTitle+'">'+accessibleTitle+'</a>';
+  		//document.getElementById('status').innerHTML = '<b>Downloading</b> <a href="?'+accessibleTitle+'">'+accessibleTitle+'</a>';
 			updateDownloadStatus();
 			var ptr = fileWriter.length;
 			if(ptr < dumpsize){
-				requestChunk(dumpurl, ptr, function(buf){
+			  var du = typeof dumpurl == 'function' ? dumpurl(ptr) : [dumpurl, ptr];
+				requestChunk(du[0], du[1], function(buf){
 				  //console.log("downloaded");
 					fileWriter.seek(ptr);
 					var bb = createBlobBuilder();
@@ -228,7 +256,8 @@ function downloadIndex(){
 		fileEntry.createWriter(function(fileWriter) {
 		  var ptr = fileWriter.length;
 			if(ptr < indexsize){
-				requestChunk(indexurl, ptr, function(buf){
+  			var du = typeof indexurl == 'function' ? indexurl(ptr) : [indexurl, ptr];
+				requestChunk(du[0], du[1], function(buf){
 					fileWriter.seek(ptr);
 					var bb = createBlobBuilder();
 					bb.append(buf);

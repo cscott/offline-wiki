@@ -104,7 +104,9 @@ function loadArticle(query){
 		//simpler this way and requires less reafactoring, so meh.
 		
 		readIndex(Math.floor(accessibleIndex * Math.random()), 400, function(text){
-			var title = text && text.split('\n').slice(1,-1);
+			var title = text && text.split('\n').slice(1,-1).filter(function(x){
+				  return !/\>/.test(x)
+			  });
 			if(title){
 			  loadArticle(title[Math.floor(title.length * Math.random())].split(/\||\>/)[0]);
 			}
