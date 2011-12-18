@@ -11,6 +11,7 @@ body {
 }
 
 
+
 #container {
   background-color: #fefdfc;
 	padding: 20px;
@@ -201,4 +202,48 @@ a.next, a.prev {
   width: 100%;
   margin-top: 10px;
   display: block;
+}
+
+
+@media all and (max-width: 640px) {
+  #container {
+    margin-left: 0;
+    margin-top: 40px;
+  }
+  footer {
+    margin-left: 0;
+  }
+  #title {
+    min-height: 0;
+    margin-left: 20px;
+    overflow:hidden;
+    white-space: nowrap;
+    width: 200px;
+    text-overflow: ellipsis;
+  }
+  #nav {
+    position: absolute;
+    right: 175px;
+    top: 0;
+    padding-top: 12px;
+  }
+  #nav a {
+    padding-right: 5px;
+  }
+  #search {
+    position: absolute;
+    right: 0;
+    top: 0;
+    margin-right: 20px;
+    width: 150px;
+  }
+  #toolbar {
+    position: absolute;
+    width: 100%;
+    margin: 0px;
+    
+  }
+  #outline {
+    display: none;
+  }
 }
