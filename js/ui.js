@@ -121,8 +121,8 @@ function loadArticle(query){
 		document.getElementById('title').innerText = "Index";	
 		document.title = "Index";
 		document.getElementById('content').innerHTML = "<input type=range id=slider> <div id=pageitems>";
-		//BTW, this thing for basing the step metric on is really stupid, revise.
-		var step = Math.floor(document.getElementById('content').scrollHeight*document.getElementById('content').scrollWidth/13 );
+
+		var step = Math.floor((innerHeight - 80) * document.getElementById('content').scrollWidth/200 );
 		document.getElementById('slider').max = Math.floor(accessibleIndex/step)*step;
 		document.getElementById('slider').step = step;
 		document.getElementById('slider').value = Math.floor(lastArticlePos/step) * step;
