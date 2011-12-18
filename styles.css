@@ -25,6 +25,8 @@ body {
 
 #content {
   position: relative;
+  
+	line-height: 1.5em;
 }
 
 p {
