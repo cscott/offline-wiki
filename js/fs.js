@@ -45,6 +45,7 @@ function switch_dump(name, dft){
   document.getElementById('dump').value = name.replace('local_','');
   var d = dumps[name];
   dumpname = name;
+  localStorage.dumpname = name;
   indexsize = d.indexsize;
   dumpsize = d.dumpsize;
   indexurl = d.indexurl;
@@ -276,14 +277,21 @@ function readIndex(start, length, callback){
 	fr.readAsText(blobSlice(index, Math.max(0, start), Math.min(index.size - start, length)), 'utf-8');
 }
 
+var stop_download = false;
 
 function downloadDump(){
+
 	fs.root.getFile(dumpname+'.lzma', {create:true, exclusive: false}, function(fileEntry){
 		fileEntry.createWriter(function(fileWriter) {
   		//document.getElementById('status').innerHTML = '<b>Downloading</b> <a href="?'+accessibleTitle+'">'+accessibleTitle+'</a>';
 			updateDownloadStatus();
 			var ptr = fileWriter.length;
 			if(ptr < dumpsize){
+		    if(stop_download){
+  				document.getElementById('download').style.display = '';
+        	document.getElementById('status').innerHTML = '<b>Not Downloading</b>';
+          return;
+        }
 			  var du = typeof dumpurl == 'function' ? dumpurl(ptr) : [dumpurl, ptr];
 				requestChunk(du[0], du[1], function(buf){
 				  //console.log("downloaded");
@@ -309,7 +317,12 @@ function downloadIndex(){
 	fs.root.getFile(dumpname+'.index', {create:true, exclusive: false}, function(fileEntry){
 		fileEntry.createWriter(function(fileWriter) {
 		  var ptr = fileWriter.length;
-			if(ptr < indexsize){
+			if(ptr < indexsize){			
+        if(stop_download){
+  				document.getElementById('download').style.display = '';
+        	document.getElementById('status').innerHTML = '<b>Not Downloading</b>';
+          return;
+        }
   			var du = typeof indexurl == 'function' ? indexurl(ptr) : [indexurl, ptr];
 				requestChunk(du[0], du[1], function(buf){
 					fileWriter.seek(ptr);

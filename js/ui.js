@@ -94,7 +94,7 @@ function loadArticle(query){
     document.getElementById('settings').style.display = ''
     document.getElementById('content').style.display = 'none'
 		document.title = document.getElementById('title').innerText = "Settings";	
-		
+		document.getElementById('outline').innerHTML = '';
 	  return;
 	}
   document.getElementById('settings').style.display = 'none'
@@ -135,6 +135,7 @@ function loadArticle(query){
 				if(closureTime >= lastTime) updateIndex();
 			}, 200)
 		}
+		document.getElementById('outline').innerHTML = '';
 		updateIndex();
 		return;
 	}
