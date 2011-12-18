@@ -24,6 +24,17 @@ var dumps = {
       'aa,ab,ac,ad,ae,af,ag,ah,ai,aj,ak'.split(',')[Math.floor(ptr / CHUNK_SIZE)],
         ptr % CHUNK_SIZE];
     }
+  },
+  pi: {
+    indexsize: 7924566,
+    dumpsize: 1025405491,
+    indexurl: 'http://offline-wiki.googlecode.com/files/pi.index',
+    dumpurl: function(ptr){
+      var CHUNK_SIZE = 100000000;
+      return ['http://offline-wiki.googlecode.com/files/pi_' +
+      'aa,ab,ac,ad,ae,af,ag,ah,ai,aj,ak'.split(',')[Math.floor(ptr / CHUNK_SIZE)],
+        ptr % CHUNK_SIZE];
+    }
   }
 
 }
