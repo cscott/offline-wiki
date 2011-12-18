@@ -158,6 +158,8 @@ function loadArticle(query){
     renderWikitext(text, function(html){
   		//var parse_start = +new Date;
       document.getElementById('content').innerHTML = html;
+      localStorage.lastArticleHTML = html;
+      localStorage.lastArticleTitle = title;
   		//console.log("Article Reflow time", +new Date - parse_start);      
 		  updateOutline();
 		  selectOutline();
@@ -354,6 +356,10 @@ onpopstate = function(e){
   if(lastArticle != title){
     loadArticle(title)
   } 
+}
+
+if(decodeURIComponent(location.search.substr(1)) == localStorage.lastArticleTitle){
+  document.getElementById('content').innerHTML = localStorage.lastArticleHTML;
 }
 
 onscroll = function(){
