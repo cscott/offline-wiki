@@ -122,7 +122,7 @@ function loadArticle(query){
 		document.title = "Index";
 		document.getElementById('content').innerHTML = "<input type=range id=slider> <div id=pageitems>";
 
-		var step = Math.floor((innerHeight - 80) * document.getElementById('content').scrollWidth/200 );
+		var step = Math.floor((innerHeight - 80) * document.getElementById('content').scrollWidth/271.828 );
 		document.getElementById('slider').max = Math.floor(accessibleIndex/step)*step;
 		document.getElementById('slider').step = step;
 		document.getElementById('slider').value = Math.floor(lastArticlePos/step) * step;
@@ -179,6 +179,10 @@ function parseBoxes(){
     var fn = parts.shift().toLowerCase();
     if(fn == 'main'){
       box.innerHTML = '<div class="rellink">Main articles: '+parts.map(function(e){
+        return '<a href="?'+e+'">'+e+'</a>';
+      }).join(', ')+'</div>'
+    }else if(fn == 'see'){
+      box.innerHTML = '<div class="rellink">Further information: '+parts.map(function(e){
         return '<a href="?'+e+'">'+e+'</a>';
       }).join(', ')+'</div>'
     }else if(fn == 'convert'){

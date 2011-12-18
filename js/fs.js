@@ -1,20 +1,57 @@
-var indexsize, dumpsize, indexurl, dumpurl;
-if(location.host=='offline-wiki.googlecode.com'){
-  indexsize = 27509
-  dumpsize = 13688465;
-  indexurl = 'http://offline-wiki.googlecode.com/files/1337.new.index';
-  dumpurl = 'http://offline-wiki.googlecode.com/files/1337.lzma';
-}else{
-  indexsize = 7924566;
-  dumpsize = 1025405491;
-  indexurl = '/Downloads/split2/pi.index'
-  dumpurl = function(ptr){
-    var CHUNK_SIZE = 100000000;
-    return ['/Downloads/split2/splitpi/pi_' +
-    'aa,ab,ac,ad,ae,af,ag,ah,ai,aj,ak'.split(',')[Math.floor(ptr / CHUNK_SIZE)],
-      ptr % CHUNK_SIZE];
+var indexsize, dumpsize, indexurl, dumpurl, dumpname;
+
+
+var dumps = {
+  leet: {
+    indexsize: 27509,
+    dumpsize: 13688465,
+    indexurl: 'http://offline-wiki.googlecode.com/files/1337.new.index',
+    dumpurl: 'http://offline-wiki.googlecode.com/files/1337.lzma',
+  },
+  local_leet: {
+    indexsize: 27509,
+    dumpsize: 13688465,
+    indexurl: '/Downloads/split2/old/1337.new.index',
+    dumpurl: '/Downloads/split2/old/1337.lzma',
+  },
+  local_pi: {
+    indexsize: 7924566,
+    dumpsize: 1025405491,
+    indexurl: '/Downloads/split2/pi.index',
+    dumpurl: function(ptr){
+      var CHUNK_SIZE = 100000000;
+      return ['/Downloads/split2/splitpi/pi_' +
+      'aa,ab,ac,ad,ae,af,ag,ah,ai,aj,ak'.split(',')[Math.floor(ptr / CHUNK_SIZE)],
+        ptr % CHUNK_SIZE];
+    }
   }
+
 }
+
+function switch_dump(name, dft){
+  if(!dumps[name] && dft){name = dft}
+  if(location.host=='localhost' && !/local_/.test(name)) name = 'local_'+name;
+  document.getElementById('dump').value = name.replace('local_','');
+  var d = dumps[name];
+  dumpname = name;
+  indexsize = d.indexsize;
+  dumpsize = d.dumpsize;
+  indexurl = d.indexurl;
+  dumpurl = d.dumpurl;
+  dump = null;
+  index = null;
+  accessibleIndex = 0;
+  accessibleTitle = '';
+  check_download();
+  initialize();
+}
+
+//if(location.host=='offline-wiki.googlecode.com'){
+//  switch_dump(localStorage.dumpname, 'leet');
+//}else{
+  switch_dump(localStorage.dumpname, 'leet');
+//}
+
 var index, dump;
 var accessibleIndex = 0;
 var accessibleTitle = ''; //almost last accessible title
@@ -69,31 +106,37 @@ function createBlobBuilder(){
 		return new WebKitBlobBuilder();
 	}
 }
-
+function loadFiles(){
+  loadIndex(function(){
+		console.log('loaded index');
+		loadDump(function(){
+			console.log('loaded dump');
+			updateAccessibleIndex();
+			setTimeout(function(){
+			  if(can_download){
+			    downloadIndex();
+			    downloadDump();
+			  }else{
+			    console.log("not downloading dump");
+			  }
+			}, 1000);
+		});
+	});
+}
 function initialize(){
 	console.log('initializing');
 	(window.requestFileSystem||window.webkitRequestFileSystem)(window.PERMANENT, 5*1024*1024 /*10 GB*/, function(filesystem){
 		fs = filesystem;
-		loadIndex(function(){
-			console.log('loaded index');
-			loadDump(function(){
-				console.log('loaded dump');
-				updateAccessibleIndex();
-				setTimeout(function(){
-				  if(can_download){
-				    downloadIndex();
-				    downloadDump();
-				  }else{
-				    console.log("not downloading dump");
-				  }
-				}, 1000);
-			});
-		});
+		loadFiles()
 	}, errorHandler);
 }
 var can_download = true;
 var concurrencyKey = +new Date;
-localStorage.checkConcurrency = concurrencyKey;
+function check_download(){
+  can_download = true;
+  localStorage.checkConcurrency = concurrencyKey;
+}
+check_download();
 onstorage = function(e){
   if(e.key == "checkConcurrency"){
     if(can_download){
@@ -106,7 +149,6 @@ onstorage = function(e){
   }
 }
 
-initialize();
 var last_download_update = 0;
 function updateAccessibleIndex(){
 	//console.log('getting accessible index');
@@ -122,7 +164,7 @@ function updateAccessibleIndex(){
 }
 
 function loadIndex(callback){
-	fs.root.getFile('dump.index', {create:true, exclusive: false}, function(e){
+	fs.root.getFile(dumpname+'.index', {create:true, exclusive: false}, function(e){
 		e.file(function(file){
 			index = file;
 			if(callback) callback();
@@ -131,7 +173,7 @@ function loadIndex(callback){
 }
 
 function loadDump(callback){
-	fs.root.getFile('dump.lzma', {create:true, exclusive: false}, function(e){
+	fs.root.getFile(dumpname+'.lzma', {create:true, exclusive: false}, function(e){
 		e.file(function(file){
 			dump = file;
 			if(callback) callback();
@@ -225,7 +267,7 @@ function readIndex(start, length, callback){
 
 
 function downloadDump(){
-	fs.root.getFile('dump.lzma', {create:true, exclusive: false}, function(fileEntry){
+	fs.root.getFile(dumpname+'.lzma', {create:true, exclusive: false}, function(fileEntry){
 		fileEntry.createWriter(function(fileWriter) {
   		//document.getElementById('status').innerHTML = '<b>Downloading</b> <a href="?'+accessibleTitle+'">'+accessibleTitle+'</a>';
 			updateDownloadStatus();
@@ -244,6 +286,7 @@ function downloadDump(){
 				})
 			}else{
 				console.log('done downloading dump');
+        can_download = false;
 				document.getElementById('download').style.display = 'none';
 			}
 		})
@@ -252,7 +295,7 @@ function downloadDump(){
 
 
 function downloadIndex(){
-	fs.root.getFile('dump.index', {create:true, exclusive: false}, function(fileEntry){
+	fs.root.getFile(dumpname+'.index', {create:true, exclusive: false}, function(fileEntry){
 		fileEntry.createWriter(function(fileWriter) {
 		  var ptr = fileWriter.length;
 			if(ptr < indexsize){
@@ -300,10 +343,10 @@ function requestChunk(url, pos, callback){
 
 
 function nero(){
-  fs.root.getFile('dump.index', {create: false}, function(fileEntry) {
+  fs.root.getFile(dumpname+'.index', {create: false}, function(fileEntry) {
     fileEntry.remove(function(){console.log("removed index file")})
   })
-  fs.root.getFile('dump.lzma', {create: false}, function(fileEntry) {
+  fs.root.getFile(dumpname+'.lzma', {create: false}, function(fileEntry) {
     fileEntry.remove(function(){console.log("removed dump file")})
   })
 }

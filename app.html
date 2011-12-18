@@ -60,13 +60,26 @@
 
 
 	      </p>
-
+	      <p>
+	      Select the parsing engine. This takes the wikitext and turns it into html which is then meant for human eyes.
+	      </p>
+<p>
         <select id="parser">
           <option value="instawiki">InstaView Parser</option>
           <option value="source">Source View</option>
           <option value="splus">Enhanced Source View</option>
           <option value="basic">Basic Parser</option>
         </select>
+   </p>
+    <p>
+  Select which file you want to use. There isn't much, I know, and that probably won't change.
+  </p>
+   <p>
+    <select id="dump" onchange="switch_dump(this.value)">
+      <option value="pi">314k December 2011 (1GB) </option>
+      <option value="leet">1337 December 2011 (13.7MB)</option>
+    </select>
+   </p>     
 	    </div>
 		  <article id="content">
 			  <p>
