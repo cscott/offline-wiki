@@ -34,12 +34,12 @@ function parse_wikitext(block){
   var first = block.substr(0, fundex).replace(/\([;, ]+/, '(').replace(/[;, ]+\)/, ')').replace('()','');
   block = first + block.substr(fundex);
   return wikiParse(
-  	block
-  		.replace(/([^ ])(''+)'s/g, "$1$2 's")
-  		.replace(/======/g, '===\n===')
-  		.replace(/[\s\n]*__TOC__[\s\n]*/g, '\n')
-  		.replace(/(=+)\n?([^=\n]+)\n?(=+)/g, '\n$1$2$3\n')
-  );
+  	block.replace('__TOC__','')
+/*  		.replace(/([^ ])(''+)'s/g, "$1$2 's")
+  		.replace(/======/g, '===\n===')*/
+//  		.replace(/[\s\n]*__TOC__[\s\n]*/g, '\n')
+//  		.replace(/(=+)\n?([^=\n]+)\n?(=+)/g, '\n$1$2$3\n')
+  )
   //[].slice.call(document.getElementsByTagName('math'),0).forEach(function(x){var i = document.createElement('img'); i.src='http://chart.apis.google.com/chart?cht=tx&chl='+encodeURIComponent(x.textContent); x.parentNode.replaceChild(i, x)})
   
    //.replace(/^[^\{]+\}\}\n*/g,'').replace(/\(\s*[;,]\s*/g,'('));
@@ -54,7 +54,7 @@ function wikiParse(w){
   var evil = false;
   
   for(var i = 0, l = w.length; i < l; i++){
-    if(w.substr(i,2) == '[['){
+    /*if(w.substr(i,2) == '[['){
       ach++;
       var next = w.substr(i+2,10);
       //console.log('[')
@@ -73,7 +73,7 @@ function wikiParse(w){
       
       i++;
       continue;
-    }
+    }*/
     
   
     if(w.substr(i, 2) == '{{'){
@@ -95,9 +95,10 @@ function wikiParse(w){
       //console.log(id,body);
       
       boxes--;
-      if(body != 'rh'){
-        buf[boxes] += '<span id="'+boxid+'"></span>'
-      }
+      //if(body != 'rh'){
+      
+      buf[boxes] += '<span class="wikibox">'+body+'</span>'
+      //}
       //console.log('closed box', boxes);
       if(boxes < 0) boxes = 0;
     }
@@ -154,14 +155,14 @@ InstaView.dump = function(from, to)
  
 InstaView.convert = function(wiki)
 {
-	var 	ll = (typeof wiki == 'string')? wiki.replace(/\r/g,'').split(/\n/): wiki, // lines of wikicode
+	var 	ll = (typeof wiki == 'string')? wiki.replace(/\r/g,'').split("\n"): wiki, // lines of wikicode
 		o='',	// output
 		p=0,	// para flag
 		$r	// result of passing a regexp to $()
  
 	// some shorthands
 	function remain() { return ll.length }
-	function sh() { return ll.shift() } // shift
+	function sh() {return ll.shift() } // shift
 	function ps(s) { o+=s } // push
  
 	function f() // similar to C's printf, uses ? as placeholders, ?? to escape question marks
@@ -285,26 +286,28 @@ InstaView.convert = function(wiki)
 		// 2: ??
 		// 3: attributes ??
 		// TODO: finish commenting this regexp
-		var td_match = sh().match(/^(\|\+|\||!)((?:([^[|]*?)\|(?!\|))?(.*))$/)
- 
+		var _sh = sh();
+		var td_match = _sh.match(/^(\|\+|\||!)((?:([^[|]*?)\|(?!\|))?(.*))$/)
+
+  //console.log(td_match.join(';')); 
+  
 		if (td_match[1] == '|+') ps('<caption');
 		else ps('<t' + ((td_match[1]=='|')?'d':'h'))
  
 		if (typeof td_match[3] != 'undefined') {
  
 			ps(' ' + td_match[3])
+
 			match_i = 4
- 
 		} else match_i = 2
  
 		ps('>')
- 
 		if (td_match[1] != '|+') {
  
 			// use || or !! as a cell separator depending on context
 			// NOTE: when split() is passed a regexp make sure to use non-capturing brackets
 			td_line = td_match[match_i].split((td_match[1] == '|')? '||': /(?:\|\||!!)/)
- 
+
 			ps(parse_inline_nowiki(td_line.shift()))
  
 			while (td_line.length) ll.unshift(td_match[1] + td_line.pop())
@@ -320,7 +323,7 @@ InstaView.convert = function(wiki)
 		}
 		else if (!tc && $('!')) break
 		else if ($('{|')) tc++
- 
+ //console.log(td.join(','));
 		if (td.length) ps(InstaView.convert(td))
 	}
  
@@ -576,27 +579,27 @@ InstaView.convert = function(wiki)
 			replace(/~{3}(?!~)/g, InstaView.conf.user.name).
  
 			// [[:Category:...]], [[:Image:...]], etc...
-			replace(RegExp('\\[\\[:((?:'+InstaView.conf.locale.category+'|'+InstaView.conf.locale.image+'|'+InstaView.conf.wiki.interwiki+'):.*?)\\]\\]','gi'), " <a href='"+InstaView.conf.paths.articles+"$1'>$1</a>").
+			replace(RegExp('\\[\\[:((?:'+InstaView.conf.locale.category+'|'+InstaView.conf.locale.image+'|'+InstaView.conf.wiki.interwiki+'):.*?)\\]\\]','gi'), "<a href='"+InstaView.conf.paths.articles+"$1'>$1</a>").
 			replace(RegExp('\\[\\[(?:'+InstaView.conf.locale.category+'|'+InstaView.conf.wiki.interwiki+'):.*?\\]\\]','gi'),'').
  
 			// [[/Relative links]]
-			replace(/\[\[(\/[^|]*?)\]\]/g, f(" <a href='?$1'>$1</a>", location)).
+			replace(/\[\[(\/[^|]*?)\]\]/g, f("<a href='?$1'>$1</a>", location)).
  
 			// [[/Replaced|Relative links]]
-			replace(/\[\[(\/.*?)\|(.+?)\]\]/g, f(" <a href='?$1'>$2</a>", location)).
+			replace(/\[\[(\/.*?)\|(.+?)\]\]/g, f("<a href='?$1'>$2</a>", location)).
  
 			// [[Common links]]
-			replace(/\[\[([^|]*?)\]\](\w*)/g, f(" <a href='?$1'>$1$2</a>", InstaView.conf.paths.articles)).
+			replace(/\[\[([^|]*?)\]\](\w*)/g, f("<a href='?$1'>$1$2</a>", InstaView.conf.paths.articles)).
  
 			// [[Replaced|Links]]
-			replace(/\[\[(.*?)\|([^\]]+?)\]\](\w*)/g, f(" <a href='?$1'>$2$3</a>", InstaView.conf.paths.articles)).
+			replace(/\[\[(.*?)\|([^\]]+?)\]\](\w*)/g, f("<a href='?$1'>$2$3</a>", InstaView.conf.paths.articles)).
  
 			// [[Stripped:Namespace|Namespace]]
-			replace(/\[\[([^\]]*?:)?(.*?)( *\(.*?\))?\|\]\]/g, f(" <a href='?$1$2$3'>$2</a>", InstaView.conf.paths.articles)).
+			replace(/\[\[([^\]]*?:)?(.*?)( *\(.*?\))?\|\]\]/g, f("<a href='?$1$2$3'>$2</a>", InstaView.conf.paths.articles)).
  
 			// External links
 			replace(/\[(https?|news|ftp|mailto|gopher|irc):(\/*)([^\]]*?) (.*?)\]/g, "<a href='$1:$2$3'>$4</a>"). /**/
-			replace(/\[http:\/\/(.*?)\]/g, " <a href='http://$1'>[#]</a>").
+			replace(/\[http:\/\/(.*?)\]/g, "<a href='http://$1'>[#]</a>").
 			replace(/\[(news|ftp|mailto|gopher|irc):(\/*)(.*?)\]/g, " <a href='$1:$2$3'>$1:$2$3</a>"). /**/
 			replace(/(^| )(https?|news|ftp|mailto|gopher|irc):(\/*)([^ $]*)/g, "$1 <a href='$2:$3$4'>$2:$3$4</a>"). /**/
  
@@ -613,7 +616,7 @@ InstaView.convert = function(wiki)
 	}
  
 	// begin parsing
-	for (;remain();) if ($(/^(={1,6})(.*)\1(.*)$/)) {
+	for (;remain();) if ($(/^(={2,6})(.*)\1(.*)$/)) {
 		p=0
 		endl(f('<h?>?</h?>?', $r[1].length, parse_inline_nowiki($r[2]), $r[1].length, $r[3]))
  

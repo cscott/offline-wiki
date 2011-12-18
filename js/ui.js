@@ -22,7 +22,7 @@ function scoreResult(result, query){
   /*
     penalize explicit results to restore some semblance of faith in humanity
   */
-  var censor = /shit|piss|fuck|cunt|tits|sex|anal|cunnilingus|hentai|penis|vagina|ejaculation/i.test(result) ? Math.E : 0;
+  var censor = /porn|shit|piss|fuck|cunt|tits|sex|anal|cunnilingus|hentai|penis|vagina|ejaculation/i.test(result) ? Math.E : 0;
   var score = damlev(result.substr(0, query.length), query) * 0.5 + damlev(result.substr(0, query.length).toLowerCase(), query.toLowerCase()) * 2 + Math.abs(query.length - result.length) * 0.1;
   //console.log(result, query, score, censor);
   return score + censor;
@@ -161,6 +161,7 @@ function loadArticle(query){
       localStorage.lastArticleHTML = html;
       localStorage.lastArticleTitle = title;
   		//console.log("Article Reflow time", +new Date - parse_start);      
+  		parseBoxes();
 		  updateOutline();
 		  selectOutline();
 		  checkLink();
@@ -168,6 +169,32 @@ function loadArticle(query){
     });
 			
 	})
+}
+
+function parseBoxes(){
+  var box = document.querySelector('.wikibox');
+  if(box){
+    box.className = '';
+    var parts = box.innerText.split(/[>|]/);
+    var fn = parts.shift().toLowerCase();
+    if(fn == 'main'){
+      box.innerHTML = '<div class="rellink">Main articles: '+parts.map(function(e){
+        return '<a href="?'+e+'">'+e+'</a>';
+      }).join(', ')+'</div>'
+    }else if(fn == 'convert'){
+      box.innerHTML = parts[0] + ' ' + parts[1].replace(/e\d/, function(a){
+        return ({
+          e6: 'million',
+          e9: 'billion'
+        })[a] + ' '
+      })
+    }else if(fn == 'ipa-en'){
+      box.innerHTML = '<small>English pronunciation:</small> <a href="?Wikipedia:IPA_for_English">/'+parts[0]+'/</a>';
+    }else{
+      box.className = 'unknown_box';
+    }
+    parseBoxes();
+  }
 }
 
 var renderWorker;
@@ -183,6 +210,8 @@ function renderWikitext(text, callback){
       }));
   }else if(v == 'source'){
     return callback('<pre>'+text+'</pre>')
+  }else if(v == 'basic'){
+    return callback(basic_wikitext(text));
   }
 	
 	renderWorker = new Worker('js/render.js');
@@ -228,8 +257,7 @@ function updateOutline(){
 	}
 }
 
-/*
-function parse_wikitext(text){
+function basic_wikitext(text){
 	return text.replace(/===([^=\n]+)===\n+/g,'<h3>$1</h3>').replace(/==([^=\n]+)==\n+/g,'<h2>$1</h2>')
 						 .replace(/\n\*\* ([^\n]+)/g, '\n<ul><ul><li>$1</li></ul></ul>')
 						 .replace(/\n\* ([^\n]+)/g, '\n<ul><li>$1</li></ul>')
@@ -238,11 +266,11 @@ function parse_wikitext(text){
 						 .replace(/\n+/g, '<br>')
 						 .replace(/\[\[([^\|\]]+)\|([^\]]+)\]\]/g, '<a href="$1">$2</a>');
 }
-*/
-
 function runSearch(query, callback, fuzzy){
 	binarySearch(slugfy(query), 0, accessibleIndex, 200, 800, defaultParser, function(low, high, res){
 		readIndex(low, high - low, function(text){
+
+			//console.log(text);
 		  var results = text.split('\n').slice(1, -1)
 			.filter(function(x){
 			  var parts = x.split(/\||\>/), title = parts[0], ptr = parts[1];
@@ -388,6 +416,7 @@ function readArticle(query, callback){
 		readArticle(query, callback);
 	}, 10);
 	findBlock(query, function(title, position, location){
+
 	  title = title.trim();
 		if(articleCache[title]) return callback(title, articleCache[title], location);
 		readPage(position, function(){

@@ -25,7 +25,8 @@ function slugfy(text){
   if(!text) return '';
   var ret = "";
   text = text.toLowerCase();
-  text = utfdec(text);
+  //text = utfdec(text);
+  //console.log(text);
   for(var l = text.length, i = 0; i < l; i++){
     var num = text.charCodeAt(i);
     if(codepoint2name[num]){
