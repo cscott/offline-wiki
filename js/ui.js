@@ -171,13 +171,16 @@ function loadArticle(query){
 var renderWorker;
 function renderWikitext(text, callback){
 	if(renderWorker) renderWorker.terminate();
+	var v = document.getElementById('parser').value;
 	
-  if(document.getElementById('source').checked){
+  if(v == 'splus'){
     return callback(text.replace(/(\n==+[^=]*?==+\n)/g, '\n$1\n').replace(/\n/g, '<br>')
       .replace(/(""|''|\=\=+)(.*?)(""|''|\=\=+)/g, '<tt>$1$2$3</tt>')
       .replace(/\[\[.*?\]\]/g, function(a){
-        return '<tt><a href="'+a.split('|')[0]+'">'+a+'</a></tt>'
+        return '<tt><a href="?'+a.split('|')[0].replace(/\[|\]/g,'')+'">'+a+'</a></tt>'
       }));
+  }else if(v == 'source'){
+    return callback('<pre>'+text+'</pre>')
   }
 	
 	renderWorker = new Worker('js/render.js');

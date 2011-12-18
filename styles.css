@@ -22,6 +22,10 @@ body {
 	margin-left: 220px;
 }
 
+#content {
+  position: relative;
+}
+
 p {
   margin: .4em 0 .5em 0;
   line-height: 1.5em;

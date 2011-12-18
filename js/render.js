@@ -2,6 +2,9 @@ onmessage  = function(e){
   postMessage(parse_wikitext(e.data));
 }
 
+
+
+
 function parse_wikitext(block){
 /*
 */
