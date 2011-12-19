@@ -1,66 +1,66 @@
 <!doctype html>
 <html manifest="offline.appcache">
-	<head>
-		<meta charset="utf-8">
-		<link rel="stylesheet" href="styles.css">
-		<title>Offline Wiki</title>
-		<!--			
-			If you're reading this in the distant future, say, 2012, and you aren't preparing
-			for the imminent apocalyptic scenarios (or if you are, that would be cool too), you 
-			should totally email me at antimatter15@gmail.com.
-			
-			If you're reading this in the post-apocalyptic world, or if for some odd reason
-			skynet was actually powered by Amazon EC2 during the great outage of April 21st,
-			2011, and somehow the malfunctioning of the cloud resulted in the prolonging of 
-			human existence, then you should still email me because there might be a decent
-			chance that I would have survived the chaos which ensued during the eventless
-			apocalypse.
-			
-			And in case the future me ever reads this. Hi. I'm you from the past. It would be
-			pretty interesting to meet you. But regardless, I would probably be disappointed
-			in whatever you've done because life seems to continue according to my diminishing
-			intelligence hypothesis. Probably, you're at least thinking that you're a lot dumber
-			than you were when I wrote this, and wondering why I consider myself a different person
-			when existing in different times. However, the people who aren't me who might happen
-			to read this document will probably find it really weird that some guy talks to himself
-			about the future and past and is probably insane or suffering some odd self diagnosed
-			inferiority complex instigated by the two time rejection from an unnamed institution
-		  for people interested in science and technology. But saying that would make future me
-		  feel weird as well as future non-mes.
-		-->
-	</head>
-	<body>
-		<header id="toolbar">
-		
-			<h1 id="title">Offline Wiki</h1>
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="styles.css">
+    <title>Offline Wiki</title>
+    <!--      
+      If you're reading this in the distant future, say, 2012, and you aren't preparing
+      for the imminent apocalyptic scenarios (or if you are, that would be cool too), you 
+      should totally email me at antimatter15@gmail.com.
+      
+      If you're reading this in the post-apocalyptic world, or if for some odd reason
+      skynet was actually powered by Amazon EC2 during the great outage of April 21st,
+      2011, and somehow the malfunctioning of the cloud resulted in the prolonging of 
+      human existence, then you should still email me because there might be a decent
+      chance that I would have survived the chaos which ensued during the eventless
+      apocalypse.
+      
+      And in case the future me ever reads this. Hi. I'm you from the past. It would be
+      pretty interesting to meet you. But regardless, I would probably be disappointed
+      in whatever you've done because life seems to continue according to my diminishing
+      intelligence hypothesis. Probably, you're at least thinking that you're a lot dumber
+      than you were when I wrote this, and wondering why I consider myself a different person
+      when existing in different times. However, the people who aren't me who might happen
+      to read this document will probably find it really weird that some guy talks to himself
+      about the future and past and is probably insane or suffering some odd self diagnosed
+      inferiority complex instigated by the two time rejection from an unnamed institution
+      for people interested in science and technology. But saying that would make future me
+      feel weird as well as future non-mes.
+    -->
+  </head>
+  <body>
+    <header id="toolbar">
+    
+      <h1 id="title">Offline Wiki</h1>
 
-				<div style="display: none" id="download">
-					<div id="status"><b>Initializing</b></div>
-					<progress id="progress" value=""></progress>
-				</div>
-				<input type="text" placeholder="Search" autocomplete=off spellcheck=off  id="search">
+        <div style="display: none" id="download">
+          <div id="status"><b>Initializing</b></div>
+          <progress id="progress" value=""></progress>
+        </div>
+        <input type="text" placeholder="Search" autocomplete=off spellcheck=off  id="search">
 
         <div id="nav">
 
           <a href="?Special:Settings">Settings</a>
-				  <a href="?Special:Index">Index</a>
-				  <a href="?Special:Random">Random</a>
-			  </div>
-			  
-			  <div id="outline">
-			  </div>
-		</header>
-		
-	  <div id="container">
-	    <div id="settings" style="display:none">
-	      <p>
-	        This is the settings page. One day, in the distant future, this will be idealistic and overflowing with neat tools and great notions.
+          <a href="?Special:Index">Index</a>
+          <a href="?Special:Random">Random</a>
+        </div>
+        
+        <div id="outline">
+        </div>
+    </header>
+    
+    <div id="container">
+      <div id="settings" style="display:none">
+        <p>
+          This is the settings page. One day, in the distant future, this will be idealistic and overflowing with neat tools and great notions.
 
 
-	      </p>
-	      <p>
-	      Select the parsing engine. This takes the wikitext and turns it into html which is then meant for human eyes.
-	      </p>
+        </p>
+        <p>
+        Select the parsing engine. This takes the wikitext and turns it into html which is then meant for human eyes.
+        </p>
 <p>
         <select id="parser">
           <option value="instawiki">InstaView Parser</option>
@@ -82,25 +82,25 @@
    Note that this button probably won't do anything if it's not downloading anything already.
    <button onclick="stop_download=true">Stop downloads</button>
    </p>     
-	    </div>
-		  <article id="content">
-			  <p>
-			  This paragraph is still in the process of being rewritten. I'm actually rewriting it now, but there's a good chance that these words won't be the same words as the final. I'm not exactly sure I'm writing these non-final words instead of writing some more final words, but I don't feel frankly in the mood to write final words.
-			  </p>
-			  <img src="image/xkcd.png" title="I'm going to credit xkcd the same way he always provides commentary: by sticking it in the title attribute of the image. However, I certainly won't be able to provide anything witty here on the magnitude of Randall Munroe.">
-		  </article>
-		</div>
-		
-		<div id="autocomplete" class="autocomplete" style="display:none; position: fixed; right: 20px; top: 28px"></div>
-	  
-		<footer>
-			Offline Wiki was made by <a href="http://twitter.com/antimatter15">@antimatter15</a>. His other projects can be found on <a href="http://antimatter15.com/">antimatter15.com</a>. The source code and instructions for compiling other languages for this project can be found on <a href="https://code.google.com/p/offline-wiki">google code</a>.
-		</footer>
+      </div>
+      <article id="content">
+        <p>
+        This paragraph is still in the process of being rewritten. I'm actually rewriting it now, but there's a good chance that these words won't be the same words as the final. I'm not exactly sure I'm writing these non-final words instead of writing some more final words, but I don't feel frankly in the mood to write final words.
+        </p>
+        <img src="image/xkcd.png" title="I'm going to credit xkcd the same way he always provides commentary: by sticking it in the title attribute of the image. However, I certainly won't be able to provide anything witty here on the magnitude of Randall Munroe.">
+      </article>
+    </div>
+    
+    <div id="autocomplete" class="autocomplete" style="display:none; position: fixed; right: 20px; top: 28px"></div>
+    
+    <footer>
+      Offline Wiki was made by <a href="http://twitter.com/antimatter15">@antimatter15</a>. His other projects can be found on <a href="http://antimatter15.com/">antimatter15.com</a>. The source code and instructions for compiling other languages for this project can be found on <a href="https://code.google.com/p/offline-wiki">google code</a>.
+    </footer>
 
-		<script src="js/autocomplete.js"></script>
-		<script src="js/slugfy.js"></script>
-		<script src="js/ui.js"></script>
-		<script src="js/damlev.js"></script>
-		<script src="js/fs.js"></script>
-	</body>
+    <script src="js/autocomplete.js"></script>
+    <script src="js/slugfy.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/damlev.js"></script>
+    <script src="js/fs.js"></script>
+  </body>
 </html>
