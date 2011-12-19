@@ -318,10 +318,14 @@ function downloadDump(){
 					fileWriter.seek(ptr);
 					var bb = createBlobBuilder();
 					bb.append(buf);
-					fileWriter.write(bb.getBlob());
+					var blob = bb.getBlob();
+					fileWriter.write(blob);
 					//console.log('writing');
-					downloadDump();
+					setTimeout(function(){
+				    downloadDump();
+					}, 100);
 					updateAccessibleIndex();
+					
 				})
 			}else{
 				console.log('done downloading dump');
@@ -348,9 +352,11 @@ function downloadIndex(){
 					fileWriter.seek(ptr);
 					var bb = createBlobBuilder();
 					bb.append(buf);
-					fileWriter.write(bb.getBlob());
-					console.log('writing');
-					downloadIndex();
+					var blob = bb.getBlob();
+					fileWriter.write(blob);
+					setTimeout(function(){
+				    downloadIndex();
+					}, 100);
 				})
 			}else{
 				console.log('done downloading index');
@@ -427,6 +433,9 @@ function errorHandler(e) {
     case FileError.INVALID_STATE_ERR:
       msg = 'INVALID_STATE_ERR';
       break;
+    case 42:
+      msg = 'Maybe Quota Error';
+      break;
     default:
       msg = 'Unknown Error';
       break;
@@ -435,4 +444,6 @@ function errorHandler(e) {
   console.log('Error: ' + msg);
   document.getElementById('download').style.display = '';
   document.getElementById('status').innerHTML = '<b>Error</b> '+msg;
+  
+  setTimeout(initialize, 1337);
 }
