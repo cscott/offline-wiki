@@ -1,5 +1,9 @@
 CACHE MANIFEST
-#rev 12
+#rev 13
+
+FALLBACK:
+app* app.html
+
 
 CACHE:
 app.html
@@ -21,3 +25,5 @@ app* app.html
 NETWORK:
 *
 
+FALLBACK:
+app* app.html
