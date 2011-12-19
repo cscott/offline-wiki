@@ -39,6 +39,8 @@ var dumps = {
 
 }
 
+var defaultsize = 1024*1024*1024*5+100;
+
 function switch_dump(name, dft){
   if(!dumps[name] && dft){name = dft}
   if(location.host=='localhost' && !/local_/.test(name)) name = 'local_'+name;
@@ -137,10 +139,19 @@ function loadFiles(){
 }
 function initialize(){
 	console.log('initializing');
-	(window.requestFileSystem||window.webkitRequestFileSystem)(window.PERMANENT, 5*1024*1024 /*10 GB*/, function(filesystem){
+	(window.requestFileSystem||window.webkitRequestFileSystem)(window.PERSISTENT, defaultsize, function(filesystem){
 		fs = filesystem;
 		loadFiles()
 	}, errorHandler);
+	webkitStorageInfo.requestQuota(
+    webkitStorageInfo.PERSISTENT, 
+    defaultsize,
+    function(grantedQuota){
+      console.log("Granted quota:", grantedQuota)
+    }, 
+    function(e){
+      console.log("Quota Request error:", e)
+    }); 
 }
 var can_download = true;
 var concurrencyKey = +new Date;
