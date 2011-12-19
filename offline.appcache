@@ -16,3 +16,6 @@ image/xkcd.png
 
 NETWORK:
 *
+
+FALLBACK:
+app.html?* app.html
