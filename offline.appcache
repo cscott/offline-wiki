@@ -1,5 +1,5 @@
 CACHE MANIFEST
-#rev 11
+#rev 12
 
 CACHE:
 app.html
@@ -14,8 +14,10 @@ js/render.js
 image/bg.png
 image/xkcd.png
 
+FALLBACK:
+app* app.html
+
+
 NETWORK:
 *
 
-FALLBACK:
-app.html?* app.html
