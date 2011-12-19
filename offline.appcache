@@ -1,5 +1,5 @@
 CACHE MANIFEST
-#rev 14
+#rev 14 subverting2
 
 CACHE:
 app.html
@@ -16,3 +16,6 @@ image/xkcd.png
 
 FALLBACK:
 / app.html
+
+NETWORK:
+*
