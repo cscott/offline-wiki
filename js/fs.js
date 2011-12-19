@@ -217,11 +217,19 @@ function downloadStatus(callback){
 	if(dump.size < 1000 || index.size < 1000) return callback(0, 'n/a');
 	if(dump.size == dumpsize && index.size == indexsize) return callback(index.size, 'n/a', dump.size);
 	//get the current size of the accessible index.
-	binarySearch(dump.size, accessibleIndex, index.size, 500, 1000, function(text){
+	var targetsize = dump.size;
+	binarySearch(targetsize - 1024 * 768, Math.max(0, accessibleIndex - 1024 * 768), index.size, 500, 1000, function(text){
 		return parse64(text.match(/\n.+?\|([\w/_\-]+)/)[1])
 	}, function(low, high, result, text){	 //using the text arg is bad! but we're using this to save a bit of time
 		//console.log(low, high, result);
-		readIndex(low, high - low, function(raw){
+		//console.log(text.split('\n')[1], result, targetsize)
+		if(text){
+		  var z = text.match(/\n(.+)\|.+\n/);
+		  callback(low + 1024 * 512, z[1])
+	  }
+		//callback(low + 1024 * 512, text && text.split('\n')[1].split(/\||\>/)[0]);
+		/*
+	  readIndex(low, high - low, function(raw){
 			var text = raw;
 			var lines = text.split("\n").slice(1);
 			var lastnum = -1;
@@ -236,7 +244,7 @@ function downloadStatus(callback){
 			}
 			var title = text && text.split('\n')[1].split(/\||\>/)[0];
 			callback(low + bytecount, title);
-		})
+		})*/
 	})
 }
 
