@@ -51,7 +51,7 @@ autocomplete(document.getElementById('search'), document.getElementById('autocom
 	if(new Date - lastSearchTime > 3141){ //Pi! also 3sec is like google instant's magic number apparnetly too
 		document.title = query;
 		console.log("pushed state");
-    history.pushState({}, '', '?'+query);
+    history.pushState({}, '', '?'+query.replace(/ |%20/g,'_'));
 	}
 	lastSearchTime = new Date;
 	loadArticle(query);
@@ -145,7 +145,7 @@ function loadArticle(query){
 	  lastArticle = title;
 	  
 		if(document.title != title){
-		  history.replaceState({}, '', '?'+title);
+		  history.replaceState({}, '', '?'+title.replace(/ |%20/g,'_'));
   		scrollTo(0,0);
 		};
 
@@ -377,7 +377,7 @@ document.body.onclick = function(e){
           return true;
         }
         e.preventDefault();
-        history.pushState({}, '', link.href);
+        history.pushState({}, '', link.href.replace(/ |%20/g,'_'));
         loadArticle(decodeURIComponent(location.search.substr(1)))
       }
     }
