@@ -15,5 +15,4 @@ image/bg.png
 image/xkcd.png
 
 FALLBACK:
-*.html app.html
-app* app.html
+/ app.html
