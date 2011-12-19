@@ -211,7 +211,7 @@ function downloadStatus(callback){
 	}, function(low, high, result, text){	 //using the text arg is bad! but we're using this to save a bit of time
 		//console.log(low, high, result);
 		readIndex(low, high - low, function(raw){
-			var text = utfdec(raw);
+			var text = raw;
 			var lines = text.split("\n").slice(1);
 			var lastnum = -1;
 			var bytecount = text.split("\n")[0].length;
@@ -344,7 +344,7 @@ var chunksize = 1024 * 1024; //one megabyte
 function requestChunk(url, pos, callback){
 
 	document.getElementById('download').style.display = '';
-	
+  var chunkstart = +new Date;	
 	var xhr = new XMLHttpRequest(); //resuse object
 	//console.log('downloading ',url + "?"+Math.random(),'position',pos);
 	xhr.open('GET', url+ "?"+Math.random(), true);
@@ -357,10 +357,12 @@ function requestChunk(url, pos, callback){
 	}
 	xhr.onload = function(){
 	  //console.log(xhr.status, xhr);
+	  var chunkend = +new Date;
+	  var elapsed = (chunkend - chunkstart);
 		if(xhr.status > 100 && xhr.status <= 400){
-//		setTimeout(function(){
-			callback(xhr.response)
-//		},5000);
+		  setTimeout(function(){
+			  callback(xhr.response)
+		  }, Math.max(0, 1000 - elapsed));
 		}
 	}
 	xhr.send(null)
