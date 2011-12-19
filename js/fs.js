@@ -203,7 +203,8 @@ function updateDownloadStatus(){
 
 function downloadStatus(callback){
 	if(!index || !dump) return false;
-	if(dump.size < 1000 || index.size < 1000) return callback(0, 0, 0);
+	if(dump.size < 1000 || index.size < 1000) return callback(0, 'n/a');
+	if(dump.size == dumpsize && index.size == indexsize) return callback(index.size, 'n/a', dump.size);
 	//get the current size of the accessible index.
 	binarySearch(dump.size, accessibleIndex, index.size, 500, 1000, function(text){
 		return parse64(text.match(/\n.+?\|([\w/_\-]+)/)[1])
@@ -223,7 +224,7 @@ function downloadStatus(callback){
 				bytecount += lines[i].length + 1; //account for the newline
 			}
 			var title = text && text.split('\n')[1].split(/\||\>/)[0];
-			callback(low + bytecount, title, lastnum, bytecount);
+			callback(low + bytecount, title);
 		})
 	})
 }

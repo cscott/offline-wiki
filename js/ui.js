@@ -214,7 +214,7 @@ function renderWikitext(text, callback){
         return '<tt><a href="?'+a.split('|')[0].replace(/\[|\]/g,'')+'">'+a+'</a></tt>'
       }));
   }else if(v == 'source'){
-    return callback('<pre>'+text+'</pre>')
+    return callback('<pre>'+text.replace(/</g, '&lt;').replace(/>/g, '&gt;')+'</pre>')
   }else if(v == 'basic'){
     return callback(basic_wikitext(text));
   }

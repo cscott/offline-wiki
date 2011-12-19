@@ -1,5 +1,18 @@
 CACHE MANIFEST
-#rev 4
-player.html
-id3v2.js
-16.png
+#rev 3
+
+CACHE:
+app.html
+styles.css
+js/slugfy.js
+js/ui.js
+js/damlev.js
+js/fs.js
+js/autocomplete.js
+js/lzma.js
+js/render.js
+image/bg.png
+image/xkcd.png
+
+NETWORK:
+*
