@@ -18,6 +18,20 @@ function reposition(){
 }
 
 
+function t(el, set){
+  if('textContent' in document.body){
+    if(typeof set != 'undefined'){
+      el.textContent = set;
+    }
+    return el.textContent;
+  }else{
+    if(typeof set != 'undefined'){
+      el.innerText = set;
+    }
+    return el.innerText;
+  }
+}
+
 function scoreResult(result, query){
   /*
     penalize explicit results to restore some semblance of faith in humanity
@@ -34,7 +48,6 @@ reposition();
 autocomplete(document.getElementById('search'), document.getElementById('autocomplete'), function(query, callback){
 	if(accessibleIndex < 100) return callback(["Downloading... Please Wait"]);
 	runSearch(query, function(results){
-		
 		var map = {};
 		callback(results.map(function(x){
 			return x.redirect ? x.pointer : x.title;
@@ -48,6 +61,7 @@ autocomplete(document.getElementById('search'), document.getElementById('autocom
 		}))
 	}, true)
 }, function(query){
+  query = query || '';
 	if(new Date - lastSearchTime > 3141){ //Pi! also 3sec is like google instant's magic number apparnetly too
 		document.title = query;
 		console.log("pushed state");
@@ -71,7 +85,7 @@ function updateIndex(){
 	var max = document.getElementById('slider').max - 0;	
 	lastArticlePos = val + step/2;
 	
-	document.getElementById('title').innerText = "Index: "+(1+(val/step))+" of "+Math.floor(1+(max/step));	
+	t(document.getElementById('title'), "Index: "+(1+(val/step))+" of "+Math.floor(1+(max/step)));	
 	readIndex(val - 200, step + 200, function(text){
 		document.getElementById('pageitems').innerHTML = '<a href="javascript:incrementSlider(-1)" class="prev">Previous</a> / <a class="next" href="javascript:incrementSlider(1)">Next</a><br>' + text.split('\n').slice(1, -1).map(function(x){
 			var title = x.split(/\||>/)[0];
@@ -83,6 +97,7 @@ function updateIndex(){
 var lastArticlePos = 0;
 
 function loadArticle(query){
+  //console.log("load article", query);
   lastArticle = query;
 	query = query.replace(/w(ikipedia)?:/,'');
 	query = query.replace(/_/g, ' ');
@@ -93,7 +108,7 @@ function loadArticle(query){
 	if(query == 'Special:Settings'){
     document.getElementById('settings').style.display = ''
     document.getElementById('content').style.display = 'none'
-		document.title = document.getElementById('title').innerText = "Settings";	
+		document.title = t(document.getElementById('title'), "Settings");	
 		document.getElementById('outline').innerHTML = '';
 	  return;
 	}
@@ -111,14 +126,14 @@ function loadArticle(query){
 			  loadArticle(title[Math.floor(title.length * Math.random())].split(/\||\>/)[0]);
 			}
 		});
-		document.getElementById('title').innerText = "Special:Random";	
+		t(document.getElementById('title'), "Special:Random");	
 		return;
 	}
 	if(query == 'Special:Index'){
 		if(accessibleIndex == 0) return setTimeout(function(){
 			loadArticle(query);
 		}, 100);
-		document.getElementById('title').innerText = "Index";	
+		t(document.getElementById('title'), "Index");	
 		document.title = "Index";
 		document.getElementById('content').innerHTML = "<input type=range id=slider> <div id=pageitems>";
 
@@ -139,8 +154,10 @@ function loadArticle(query){
 		updateIndex();
 		return;
 	}
-	document.getElementById('title').innerText = "Loading...";	
+	t(document.getElementById('title'), "Loading...");	
 	reposition();
+	
+  //console.log("loading article", query)
 	readArticle(query, function(title, text, pos){
 	  lastArticle = title;
 	  
@@ -151,7 +168,7 @@ function loadArticle(query){
 
 
 		document.title = title;
-		document.getElementById('title').innerText = title;	
+		t(document.getElementById('title'), title);	
 
 		if(pos) lastArticlePos = pos;
 		reposition();
@@ -176,7 +193,7 @@ function parseBoxes(){
   var box = document.querySelector('.wikibox');
   if(box){
     box.className = '';
-    var parts = box.innerText.split(/[>|]/);
+    var parts = t(box).split(/[>|]/);
     var fn = parts.shift().toLowerCase();
     if(fn == 'main'){
       box.innerHTML = '<div class="rellink">Main articles: '+parts.map(function(e){
@@ -241,7 +258,7 @@ function updateOutline(){
 	document.getElementById('outline').appendChild(ol);
 	var lastnum = 2;
 	for(var i = 0; i < els.length; i++){
-	  if(els[i].innerText.replace(/[^\<\>\"\'\&;_%\+\=\[\]]/g,'').length > 1) continue;
+	  if(t(els[i]).replace(/[^\<\>\"\'\&;_%\+\=\[\]]/g,'').length > 1) continue;
 	  var num = parseInt(els[i].tagName.replace(/[^0-9]/g, ''));
 	  if(num > lastnum){
 	    var nol = document.createElement('ol');
@@ -253,10 +270,10 @@ function updateOutline(){
 	  var lye = document.createElement('li');
 	  var lynk = document.createElement('a');
 	  lye.appendChild(lynk);
-	  els[i].id = els[i].innerText.replace(/[^\w]/g, '');
+	  els[i].id = t(els[i]).replace(/[^\w]/g, '');
 	  els[i].link = lynk;
 	  lynk.href = '#'+els[i].id;
-	  lynk.innerText = els[i].innerText;
+	  t(lynk,t(els[i]));
 	  ol.appendChild(lye);
 	  lastnum = num
 	}
@@ -274,7 +291,6 @@ function basic_wikitext(text){
 function runSearch(query, callback, fuzzy){
 	binarySearch(slugfy(query), 0, accessibleIndex, 200, 800, defaultParser, function(low, high, res){
 		readIndex(low, high - low, function(text){
-
 			//console.log(text);
 		  var results = text.split('\n').slice(1, -1)
 			.filter(function(x){
@@ -316,7 +332,7 @@ var redirectCache = {};
 function findBlock(query, callback){
 	runSearch(query, function(results, pos){
 		if(!results[0]){
-		  callback(query, 0, 0);
+		  callback(query, -1, 0);
 		}else if(results[0].redirect){
 			findBlock(results[0].pointer, callback)
 		}else{
@@ -329,7 +345,7 @@ function findBlock(query, callback){
 var linkCache = {};
 
 function checkLink(){
-  if(document.title == 'Index') return;
+  if(document.title == 'Index' || !fs) return;
   var link;
   while(link = document.getElementById('content').querySelector('a:not(.checked)')){
     var url = unescape(link.href.replace(/^.*\?|\#.*$/g,'')).toLowerCase().replace(/[^a-z0-9]/g,'');
@@ -345,6 +361,7 @@ function checkLink(){
 }
 
 function checkLinkUncached(){
+  if(document.title == 'Index' || !fs) return;
   var link = document.getElementById('content').querySelector('a:not(.cached)');
   if(link && document.title != 'Index'){
     var url = unescape(link.href.replace(/^.*\?|\#.*$/g,'')).toLowerCase().replace(/[^a-z0-9]/g,'');
@@ -384,16 +401,23 @@ document.body.onclick = function(e){
   }
 }
 
-onpopstate = function(e){
+function pophandler(e){
   var title = decodeURIComponent(location.search.substr(1));
+  console.log(title);
   if(lastArticle != title){
     loadArticle(title)
   } 
 }
 
+onpopstate = pophandler;
+
 if(decodeURIComponent(location.search.substr(1)) == localStorage.lastArticleTitle){
   document.getElementById('content').innerHTML = localStorage.lastArticleHTML;
 }
+
+setTimeout(function(){
+  pophandler();
+},100);
 
 onscroll = function(){
   selectOutline();
@@ -417,22 +441,21 @@ var worker;
 
 
 function readArticle(query, callback){
-	if(!index || accessibleIndex < 10 || !dump) return setTimeout(function(){
+  //console.log("read article", query);
+	if(accessibleIndex < 100) return setTimeout(function(){
 		readArticle(query, callback);
 	}, 10);
 	findBlock(query, function(title, position, location){
-
 	  title = title.trim();
-		if(articleCache[title]) return callback(title, articleCache[title], location);
-		readPage(position, function(){
+	  //console.log(title, title in articleCache)
+		if(title in articleCache) return callback(title, articleCache[title], location);
+		readDump(position, function(){
 			callback(title, articleCache[title] || "==Page Not Found==", location);
-			
 		})
 	})
 }
 
-function readPage(position, callback, blocksize){
-	var fr = new FileReader();
+function decompressPage(compressed, callback){
 	if(worker) worker.terminate();
 	worker = new Worker('js/lzma.js');
 	worker.addEventListener('error', function(e){ 
@@ -455,10 +478,7 @@ function readPage(position, callback, blocksize){
   	//portal 2 is coming tomorrow so this is obligatory
   	//window.companioncube = block;
   }, false);
-	fr.onload = function(){
-		worker.postMessage(fr.result);
-	}
-	//fr.readAsBinaryString(blobSlice(dump, position, blocksize || 200000));
-	fr.readAsArrayBuffer(blobSlice(dump, position, blocksize || 200000));
 	starttime = +new Date;
+	worker.postMessage(compressed);
 }
+

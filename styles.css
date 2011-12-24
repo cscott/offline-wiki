@@ -20,6 +20,7 @@ body {
 	margin-top: 20px;
 	word-wrap: break-word;
 	-webkit-box-shadow: -0px 0px 10px #888;
+	box-shadow: -0px 0px 10px #888;
 	margin-left: 220px;
 }
 
@@ -37,6 +38,10 @@ p {
 #pageitems {
 	-webkit-column-width: 180px;
 	-webkit-column-gap: 20px;
+	column-width: 180px;
+	column-gap: 20px;
+	-moz-column-width: 180px;
+	-moz-column-gap: 20px;
 }
 
 #slider {
@@ -119,6 +124,7 @@ a.new {
 
 #search:focus {
 	-webkit-box-shadow: 0px 0px 10px #aaa;
+	box-shadow: 0px 0px 10px #aaa;
 }
 
 .autocomplete {
@@ -128,6 +134,7 @@ a.new {
 	cursor: default;
 	overflow-x: hidden;	
 	-webkit-box-shadow: 0px 5px 10px #aaa;
+	box-shadow: 0px 5px 10px #aaa;
 }
 
 .autocomplete .item {
@@ -135,9 +142,16 @@ a.new {
 	padding: 0.2em;
 }
 
+
+.autocomplete .item:hover {
+  background-color: #e6edf7;
+}
+
+
 .autocomplete .item.highlight {
-	background-color: #4C59A6;
-	background-color: rgb(181, 213, 255);
+	/*background-color: #4C59A6;*/
+	/*background-color: rgb(181, 213, 255);*/
+	background-color: #cedced;
 }
 
 #title {
@@ -174,7 +188,7 @@ a.new {
 
 
 #nav * {
-	padding-right: 18px;
+	margin-right: 18px;
 }
 
 

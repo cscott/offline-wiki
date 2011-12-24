@@ -1,5 +1,9 @@
 var indexsize, dumpsize, indexurl, dumpurl, dumpname;
 
+var index, dump;
+var accessibleIndex = 0;
+var accessibleTitle = ''; //almost last accessible title
+var fs;
 
 var dumps = {
   leet: {
@@ -43,7 +47,7 @@ var defaultsize = 1024*1024*1024*5+100;
 
 function switch_dump(name, dft){
   if(!dumps[name] && dft){name = dft}
-  if(location.host=='localhost' && !/local_/.test(name)) name = 'local_'+name;
+  if((location.host=='localhost' || /\.local/.test(location.host)) && !/local_/.test(name)) name = 'local_'+name;
   document.getElementById('dump').value = name.replace('local_','');
   var d = dumps[name];
   dumpname = name;
@@ -66,10 +70,6 @@ function switch_dump(name, dft){
   switch_dump(localStorage.dumpname, 'leet');
 //}
 
-var index, dump;
-var accessibleIndex = 0;
-var accessibleTitle = ''; //almost last accessible title
-var fs;
 
 var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_', clookup = {};
 for(var i = 0; i < chars.length; i++) clookup[chars[i]] = i;
@@ -139,19 +139,29 @@ function loadFiles(){
 }
 function initialize(){
 	console.log('initializing');
-	(window.requestFileSystem||window.webkitRequestFileSystem)(window.PERSISTENT, defaultsize, function(filesystem){
-		fs = filesystem;
-		loadFiles()
-	}, errorHandler);
-	webkitStorageInfo.requestQuota(
-    webkitStorageInfo.PERSISTENT, 
-    defaultsize,
-    function(grantedQuota){
-      console.log("Granted quota:", grantedQuota)
-    }, 
-    function(e){
-      console.log("Quota Request error:", e)
-    }); 
+	var rfs = (window.requestFileSystem||window.webkitRequestFileSystem);
+	if(rfs){
+	  rfs(window.PERSISTENT, defaultsize, function(filesystem){
+		  fs = filesystem;
+		  loadFiles()
+	  }, errorHandler);
+	}else{
+	  console.log("Online Fallback");
+	  accessibleIndex = indexsize;
+	  console.log(accessibleIndex);
+	  
+	}
+	if(window.webkitStorageInfo){
+  	webkitStorageInfo.requestQuota(
+      webkitStorageInfo.PERSISTENT, 
+      defaultsize,
+      function(grantedQuota){
+        console.log("Granted quota:", grantedQuota)
+      }, 
+      function(e){
+        console.log("Quota Request error:", e)
+      }); 
+  }
 }
 var can_download = true;
 var concurrencyKey = +new Date;
@@ -225,7 +235,7 @@ function downloadStatus(callback){
 		//console.log(text.split('\n')[1], result, targetsize)
 		if(text){
 		  var z = text.match(/\n(.+)\|.+\n/);
-		  callback(low + 1024 * 512, z[1])
+		  callback(Math.floor(low/2 + high/2) + 1024 * 512, z[1])
 	  }
 		//callback(low + 1024 * 512, text && text.split('\n')[1].split(/\||\>/)[0]);
 		/*
@@ -284,17 +294,57 @@ function defaultParser(text){
 var indexCache = {};
 
 function readIndex(start, length, callback){
-	if(!index) return callback('');
-
-	var hash = 'i'+start+'-'+length;
+  var hash = 'i'+start+'-'+length;
 	if(indexCache[hash]) return callback(indexCache[hash]);
-	var fr = new FileReader();
-	fr.onload = function(){
-		indexCache[hash] = fr.result;
-		callback(fr.result);
-	}
+	start = Math.max(0, start);
 	
-	fr.readAsText(blobSlice(index, Math.max(0, start), Math.min(index.size - start, length)), 'utf-8');
+  if(fs){
+	  if(!index) return callback('');
+	  var fr = new FileReader();
+	  fr.onload = function(){
+		  indexCache[hash] = fr.result;
+		  callback(fr.result);
+	  }
+	
+	  fr.readAsText(blobSlice(index, start, Math.min(index.size - start, length)), 'utf-8');
+	}else{
+  	var xhr = new XMLHttpRequest(); //resuse object
+  	var du = typeof indexurl == 'function' ? indexurl(start) : [indexurl, start];
+	  xhr.open('GET', du[0] + "?"+Math.random(), true);
+	  xhr.setRequestHeader('Range', 'bytes='+du[1]+'-'+Math.min(indexsize, du[1]+length));
+	  xhr.onload = function(){
+	    indexCache[hash] = xhr.responseText;
+	    callback(xhr.responseText);
+	  }
+	  xhr.send(null);
+	}
+}
+
+
+
+function readDump(position, callback, blocksize){
+  //console.log("reading dump", position);
+	blocksize = blocksize || 200000;
+  if(fs){
+    //console.log("failing else");
+	  var fr = new FileReader();
+	  fr.onload = function(){
+		  decompressPage(fr.result, callback);
+	  }
+	  //fr.readAsBinaryString(blobSlice(dump, position, blocksize || 200000));
+	  fr.readAsArrayBuffer(blobSlice(dump, position, blocksize));
+	}else{
+	  //console.log("creating XHR")
+  	var xhr = new XMLHttpRequest(); //resuse object
+  	var du = typeof dumpurl == 'function' ? dumpurl(position) : [dumpurl, position];
+	  xhr.open('GET', du[0] + "?"+Math.random(), true);
+	  xhr.setRequestHeader('Range', 'bytes='+du[1]+'-'+(du[1]+blocksize));
+  	xhr.responseType = 'arraybuffer';
+	  xhr.onload = function(){
+	    decompressPage(xhr.response, callback);
+	  }
+	  xhr.send(null);
+	}
 }
 
 var stop_download = false;
@@ -367,13 +417,12 @@ function downloadIndex(){
 
 var chunksize = 1024 * 1024; //one megabyte
 function requestChunk(url, pos, callback){
-
 	document.getElementById('download').style.display = '';
   var chunkstart = +new Date;	
 	var xhr = new XMLHttpRequest(); //resuse object
 	//console.log('downloading ',url + "?"+Math.random(),'position',pos);
 	xhr.open('GET', url+ "?"+Math.random(), true);
-	xhr.setRequestHeader('Range', 'bytes='+pos+'-'+(pos+chunksize));
+	xhr.setRequestHeader('Range', 'bytes='+pos+'-'+(pos+cs));
 
 	xhr.responseType = 'arraybuffer';
 	xhr.onerror = function(){
@@ -387,7 +436,7 @@ function requestChunk(url, pos, callback){
 		if(xhr.status > 100 && xhr.status <= 400){
 		  setTimeout(function(){
 			  callback(xhr.response)
-		  }, Math.max(0, 1000 - elapsed));
+		  }, Math.max(0, 10000 - elapsed));
 		}
 	}
 	xhr.send(null)
@@ -402,17 +451,6 @@ function nero(){
     fileEntry.remove(function(){console.log("removed dump file")})
   })
 }
-
-/*
-
-	xhr = new XMLHttpRequest();
-	xhr.open('GET', 'http://localhost/js-wikireader/app/tools/dump.lzma', true);
-	xhr.setRequestHeader('Range', 'bytes=500-999000');
-	xhr.responseType = 'arraybuffer';
-	xhr.send(null);
-	
-*/
-
 
 function errorHandler(e) {
   var msg = '';
