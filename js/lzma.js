@@ -1,3 +1,94 @@
+var worker;
+function decompressPage(compressed, callback){
+  if(worker) worker.terminate();
+  worker = new Worker('js/lzma.js');
+  worker.addEventListener('error', function(e){ 
+    console.log('LZMA decompression error', e);
+  }, false);
+  var starttime, endtime;
+  
+  worker.addEventListener('message', function(e){
+    endtime = +new Date;
+    console.log("Decompression time", endtime - starttime);
+  	var block = e.data;
+  	var re = /=([^=\n\#\<\>\[\]\|\{\}]+)=\n\n\n\n/g;
+  	var matches = re.exec(block), lastIndex = 0;
+  	//console.log(block);
+	  while (matches){
+		  articleCache[matches[1].trim()] = block.slice(re.lastIndex, (matches = re.exec(block))?matches.index:undefined)
+		  //console.log(matches[1].trim())
+	  }
+  	callback();
+  	//portal 2 is coming tomorrow so this is obligatory
+  	//window.companioncube = block;
+  }, false);
+  starttime = +new Date;
+  worker.postMessage(compressed);
+}
+if(typeof window == 'undefined'){
+  onmessage = function(e){
+    var data = new Uint8Array(e.data);
+    var size = data.subarray(5, 13);
+    var int_size = size[0] | (size[1] << 8) | (size[2] << (8*2)) | (size[3] << (8*3)) | (size[4] << (8*4)) | (size[5] << (8*5));
+    var hptr = 0, dptr = 13;
+    var result = '';
+    LZMA.decompress({
+      readByte: function(){
+        return data[hptr++]
+      }
+    }, {
+      readByte: function(){
+        return data[dptr++]
+      }
+    }, {
+      writeByte: function(b){
+        result += String.fromCharCode(b)
+      }
+    }, int_size);
+    postMessage(decodeURIComponent(escape(result)))
+  }
+}
+
+
+/*
+onmessage = function(e){
+  var raw = e.data.slice(0, 13).split('').map(function(x){
+    return x.charCodeAt(0)
+  });
+  var rstr = e.data.slice(13);
+  var head = raw.slice(0, 13);
+  var size = head.slice(5, 13);
+  var is = size[0] | (size[1] << 8) | (size[2] << (8*2)) | (size[3] << (8*3)) | (size[4] << (8*4)) | (size[5] << (8*5))
+  //var body = raw.slice(13);
+
+  var createInStream = function(data) {
+	  var inStream = {
+	    data: data,
+	    offset: 0,
+	    readByte: function(){
+	      return this.data[this.offset++];
+	    }
+	  };
+	  return inStream;
+  };
+  var s = '';
+  var outStream = {
+    writeByte: function(b){
+      s += String.fromCharCode(b)
+    }
+  }
+  var offset = 0;
+  LZMA.decompress(createInStream(head), {
+    readByte: function(){
+      return rstr.charCodeAt(offset++)
+    }
+  }, outStream, is);
+
+
+  postMessage(decodeURIComponent( escape(s)));
+}
+*/
+
 
 var LZMA = LZMA || {};
 
@@ -508,63 +599,3 @@ LZMA.decompress = function(properties, inStream, outStream, outSize){
 
   return true;
 };
-/*
-onmessage = function(e){
-  var raw = e.data.slice(0, 13).split('').map(function(x){
-    return x.charCodeAt(0)
-  });
-  var rstr = e.data.slice(13);
-  var head = raw.slice(0, 13);
-  var size = head.slice(5, 13);
-  var is = size[0] | (size[1] << 8) | (size[2] << (8*2)) | (size[3] << (8*3)) | (size[4] << (8*4)) | (size[5] << (8*5))
-  //var body = raw.slice(13);
-
-  var createInStream = function(data) {
-	  var inStream = {
-	    data: data,
-	    offset: 0,
-	    readByte: function(){
-	      return this.data[this.offset++];
-	    }
-	  };
-	  return inStream;
-  };
-  var s = '';
-  var outStream = {
-    writeByte: function(b){
-      s += String.fromCharCode(b)
-    }
-  }
-  var offset = 0;
-  LZMA.decompress(createInStream(head), {
-    readByte: function(){
-      return rstr.charCodeAt(offset++)
-    }
-  }, outStream, is);
-
-
-  postMessage(decodeURIComponent( escape(s)));
-}
-*/
-
-onmessage = function(e){
-  var data = new Uint8Array(e.data);
-  var size = data.subarray(5, 13);
-  var int_size = size[0] | (size[1] << 8) | (size[2] << (8*2)) | (size[3] << (8*3)) | (size[4] << (8*4)) | (size[5] << (8*5));
-  var hptr = 0, dptr = 13;
-  var result = '';
-  LZMA.decompress({
-    readByte: function(){
-      return data[hptr++]
-    }
-  }, {
-    readByte: function(){
-      return data[dptr++]
-    }
-  }, {
-    writeByte: function(b){
-      result += String.fromCharCode(b)
-    }
-  }, int_size);
-  postMessage(decodeURIComponent(escape(result)))
-}

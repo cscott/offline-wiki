@@ -1,75 +1,3 @@
-//stolen from quirksmode
-function findPos(obj) {
-	var curleft = curtop = 0;
-	if (obj.offsetParent) {
-	  do {
-			  curleft += obj.offsetLeft;
-			  curtop += obj.offsetTop;
-	  } while (obj = obj.offsetParent);
-	}
-	return [curleft,curtop];
-}
-function reposition(){
-  var sea = document.getElementById('search');
-  var p = findPos(sea);
-  document.getElementById('autocomplete').style.top = (p[1] + sea.offsetHeight - 1) + 'px';
-  document.getElementById('autocomplete').style.left = p[0] + 'px';
-  document.getElementById('autocomplete').style.width = (sea.offsetWidth - 2) + 'px';
-}
-
-
-function t(el, set){
-  if('textContent' in document.body){
-    if(typeof set != 'undefined'){
-      el.textContent = set;
-    }
-    return el.textContent;
-  }else{
-    if(typeof set != 'undefined'){
-      el.innerText = set;
-    }
-    return el.innerText;
-  }
-}
-
-function scoreResult(result, query){
-  /*
-    penalize explicit results to restore some semblance of faith in humanity
-  */
-  var censor = /porn|shit|piss|fuck|cunt|tits|sex|anal|cunnilingus|hentai|penis|vagina|ejaculation/i.test(result) ? Math.E : 0;
-  var score = damlev(result.substr(0, query.length), query) * 0.5 + damlev(result.substr(0, query.length).toLowerCase(), query.toLowerCase()) * 2 + Math.abs(query.length - result.length) * 0.1;
-  //console.log(result, query, score, censor);
-  return score + censor;
-}
-var lastSearchTime = 0;
-var lastArticle = '';
-
-reposition();
-autocomplete(document.getElementById('search'), document.getElementById('autocomplete'), function(query, callback){
-	if(accessibleIndex < 100) return callback(["Downloading... Please Wait"]);
-	runSearch(query, function(results){
-		var map = {};
-		callback(results.map(function(x){
-			return x.redirect ? x.pointer : x.title;
-		}).filter(function(x){
-		  if(map[x]) return 0;
-		  return map[x] = 1;
-		}).slice(0,15).map(function(x){
-			//this is probably one of my cleverest regexes ever
-			//return x.replace(new RegExp('('+query.split('').join('|')+')','gi'), '|$1|').replace(/((\|.\|){2,})/g, '<b>$1</b>').replace(/\|/g,'')
-			return x.replace(new RegExp('('+query.replace(/[^\w]/g, ' ').replace(/ +/g,'|')+')', 'gi'), '<b>$1</b>')
-		}))
-	}, true)
-}, function(query){
-  query = query || '';
-	if(new Date - lastSearchTime > 3141){ //Pi! also 3sec is like google instant's magic number apparnetly too
-		document.title = query;
-		console.log("pushed state");
-    history.pushState({}, '', '?'+query.replace(/ |%20/g,'_'));
-	}
-	lastSearchTime = new Date;
-	loadArticle(query);
-});
 
 function incrementSlider(pagesDelta){
 	var step = document.getElementById('slider').step - 0;
@@ -219,36 +147,7 @@ function parseBoxes(){
   }
 }
 
-var renderWorker;
-function renderWikitext(text, callback){
-	if(renderWorker) renderWorker.terminate();
-	var v = document.getElementById('parser').value;
-	
-  if(v == 'splus'){
-    return callback(text.replace(/(\n==+[^=]*?==+\n)/g, '\n$1\n').replace(/\n/g, '<br>')
-      .replace(/(""|''|\=\=+)(.*?)(""|''|\=\=+)/g, '<tt>$1$2$3</tt>')
-      .replace(/\[\[.*?\]\]/g, function(a){
-        return '<tt><a href="?'+a.split('|')[0].replace(/\[|\]/g,'')+'">'+a+'</a></tt>'
-      }));
-  }else if(v == 'source'){
-    return callback('<pre>'+text.replace(/</g, '&lt;').replace(/>/g, '&gt;')+'</pre>')
-  }else if(v == 'basic'){
-    return callback(basic_wikitext(text));
-  }
-	
-	renderWorker = new Worker('js/render.js');
-	renderWorker.addEventListener('error', function(e){ 
-    console.log('Rendering error', e);
-  }, false);
-  var starttime, endtime;
-  renderWorker.addEventListener('message', function(e){
-    endtime = +new Date;
-    console.log("Render time", endtime - starttime);
-    callback(e.data);
-  }, false);
-	renderWorker.postMessage(text);
-	starttime = +new Date;
-}
+
 
 
 function updateOutline(){
@@ -279,72 +178,11 @@ function updateOutline(){
 	}
 }
 
-function basic_wikitext(text){
-	return text.replace(/===([^=\n]+)===\n+/g,'<h3>$1</h3>').replace(/==([^=\n]+)==\n+/g,'<h2>$1</h2>')
-						 .replace(/\n\*\* ([^\n]+)/g, '\n<ul><ul><li>$1</li></ul></ul>')
-						 .replace(/\n\* ([^\n]+)/g, '\n<ul><li>$1</li></ul>')
-						 .replace(/'''([^']+)'''/g, '<b>$1</b>')
-						 .replace(/''([^']+)''/g, '<i>$1</i>')
-						 .replace(/\n+/g, '<br>')
-						 .replace(/\[\[([^\|\]]+)\|([^\]]+)\]\]/g, '<a href="$1">$2</a>');
-}
-function runSearch(query, callback, fuzzy){
-	binarySearch(slugfy(query), 0, accessibleIndex, 200, 800, defaultParser, function(low, high, res){
-		readIndex(low, high - low, function(text){
-			//console.log(text);
-		  var results = text.split('\n').slice(1, -1)
-			.filter(function(x){
-			  var parts = x.split(/\||\>/), title = parts[0], ptr = parts[1];
-			  return title && (fuzzy || (title.toLowerCase().trim().replace(/[^a-z0-9]/g,'') == query.toLowerCase().trim().replace(/[^a-z0-9]/g,'')))
-			});
-			if(fuzzy != 2){
-			  results = results.map(function(x){
-				  var parts = x.split(/\||\>/), title = parts[0].replace(/_/g, ' '), ptr = parts[1];
-				  return {title: title, pointer: /\>/.test(x) ? ptr : parse64(ptr), redirect: /\>/.test(x), score: scoreResult(title, query)}
-			  }).sort(function(a, b){
-				  return a.score - b.score
-			  })
-			}
-			callback(results, low);
-			
-			
-				//var display = /\>/.test(x)?ptr:title;
-				//scoremap[display] = Math.min(scoremap[display] || Infinity, scoreResult(title, query));
-			})
-			/*
-			var scoremap = {};
-			text.split('\n').slice(1).forEach(function(x){
-				var parts = x.split(/\||\>/), title = parts[0], ptr = parts[1];
-				//var display = /\>/.test(x)?ptr:title;
-				//scoremap[display] = Math.min(scoremap[display] || Infinity, scoreResult(title, query));
-			});
-			callback(Object.keys(scoremap).sort(function(a, b){
-				return scoremap[a] - scoremap[b];
-			}).slice(0, 15))
-	
-		})
-			*/
-	})
-}
-
 var redirectCache = {};
-
-function findBlock(query, callback){
-	runSearch(query, function(results, pos){
-		if(!results[0]){
-		  callback(query, -1, 0);
-		}else if(results[0].redirect){
-			findBlock(results[0].pointer, callback)
-		}else{
-			callback(results[0].title, results[0].pointer, pos)
-		}
-	})
-}
-
-
 var linkCache = {};
 
 function checkLink(){
+return;
   if(document.title == 'Index' || !fs) return;
   var link;
   while(link = document.getElementById('content').querySelector('a:not(.checked)')){
@@ -361,6 +199,7 @@ function checkLink(){
 }
 
 function checkLinkUncached(){
+return;
   if(document.title == 'Index' || !fs) return;
   var link = document.getElementById('content').querySelector('a:not(.cached)');
   if(link && document.title != 'Index'){
@@ -437,7 +276,6 @@ function selectOutline(){
 
 
 var articleCache = {};
-var worker;
 
 
 function readArticle(query, callback){
@@ -455,30 +293,5 @@ function readArticle(query, callback){
 	})
 }
 
-function decompressPage(compressed, callback){
-	if(worker) worker.terminate();
-	worker = new Worker('js/lzma.js');
-	worker.addEventListener('error', function(e){ 
-    console.log('LZMA decompression error', e);
-  }, false);
-  var starttime, endtime;
-  
-  worker.addEventListener('message', function(e){
-    endtime = +new Date;
-    console.log("Decompression time", endtime - starttime);
-  	var block = e.data;
-  	var re = /=([^=\n\#\<\>\[\]\|\{\}]+)=\n\n\n\n/g;
-  	var matches = re.exec(block), lastIndex = 0;
-  	//console.log(block);
-		while (matches){
-			articleCache[matches[1].trim()] = block.slice(re.lastIndex, (matches = re.exec(block))?matches.index:undefined)
-			//console.log(matches[1].trim())
-		}
-  	callback();
-  	//portal 2 is coming tomorrow so this is obligatory
-  	//window.companioncube = block;
-  }, false);
-	starttime = +new Date;
-	worker.postMessage(compressed);
-}
+
 

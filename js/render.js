@@ -1,7 +1,48 @@
-onmessage  = function(e){
-  postMessage(parse_wikitext(e.data));
+var renderWorker;
+function renderWikitext(text, callback){
+  if(renderWorker) renderWorker.terminate();
+  var v = document.getElementById('parser').value;
+
+  if(v == 'splus'){
+    return callback(text.replace(/(\n==+[^=]*?==+\n)/g, '\n$1\n').replace(/\n/g, '<br>')
+      .replace(/(""|''|\=\=+)(.*?)(""|''|\=\=+)/g, '<tt>$1$2$3</tt>')
+      .replace(/\[\[.*?\]\]/g, function(a){
+        return '<tt><a href="?'+a.split('|')[0].replace(/\[|\]/g,'')+'">'+a+'</a></tt>'
+      }));
+  }else if(v == 'source'){
+    return callback('<pre>'+text.replace(/</g, '&lt;').replace(/>/g, '&gt;')+'</pre>')
+  }else if(v == 'basic'){
+    return callback(basic_wikitext(text));
+  }
+
+  renderWorker = new Worker('js/render.js');
+  renderWorker.addEventListener('error', function(e){ 
+    console.log('Rendering error', e);
+  }, false);
+  var starttime, endtime;
+  renderWorker.addEventListener('message', function(e){
+    endtime = +new Date;
+    console.log("Render time", endtime - starttime);
+    callback(e.data);
+  }, false);
+  renderWorker.postMessage(text);
+  starttime = +new Date;
+}
+if(typeof window == 'undefined'){
+  onmessage = function(e){
+    postMessage(parse_wikitext(e.data));
+  }
 }
 
+function basic_wikitext(text){
+	return text.replace(/===([^=\n]+)===\n+/g,'<h3>$1</h3>').replace(/==([^=\n]+)==\n+/g,'<h2>$1</h2>')
+						 .replace(/\n\*\* ([^\n]+)/g, '\n<ul><ul><li>$1</li></ul></ul>')
+						 .replace(/\n\* ([^\n]+)/g, '\n<ul><li>$1</li></ul>')
+						 .replace(/'''([^']+)'''/g, '<b>$1</b>')
+						 .replace(/''([^']+)''/g, '<i>$1</i>')
+						 .replace(/\n+/g, '<br>')
+						 .replace(/\[\[([^\|\]]+)\|([^\]]+)\]\]/g, '<a href="$1">$2</a>');
+}
 
 
 

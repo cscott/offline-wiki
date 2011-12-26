@@ -223,6 +223,8 @@ function updateDownloadStatus(){
 
 
 function downloadStatus(callback){
+  return callback(index.size, 'n/a', dump.size);
+  
 	if(!index || !dump) return false;
 	if(dump.size < 1000 || index.size < 1000) return callback(0, 'n/a');
 	if(dump.size == dumpsize && index.size == indexsize) return callback(index.size, 'n/a', dump.size);
@@ -258,40 +260,6 @@ function downloadStatus(callback){
 	})
 }
 
-
-function binarySearch(value, low, high, win, threshold, parser, callback){
-	coreSearch(Math.round(low + (high - low) / 2));
-	function coreSearch(mid){
-		readIndex(mid - win, win * 2, function(text){
-			try{
-				var result = parser(text); //maybe ideally something closer to the exact center would be better.
-			}catch(err){
-				return coreSearch(mid + win + 10000);
-			}
-			var offset = text.split("\n")[0].length + 1;
-				
-			if(high - low < threshold * 2){
-				return callback(low, high, result, text);
-			}
-			//console.log(result, result < value ? '<' : '>', value);
-			if(result < value){
-				binarySearch(value, mid - win, high, win, threshold, parser, callback);
-			}else{
-				binarySearch(value, low, mid + win, win, threshold, parser, callback);
-			}
-		})
-	}
-}
-
-
-function defaultParser(text){
-	return text && slugfy(text.split("\n")[1].split(/\||\>/)[0])
-}
-
-
-
-
-var indexCache = {};
 
 function readIndex(start, length, callback){
   var hash = 'i'+start+'-'+length;
@@ -329,7 +297,8 @@ function readDump(position, callback, blocksize){
     //console.log("failing else");
 	  var fr = new FileReader();
 	  fr.onload = function(){
-		  decompressPage(fr.result, callback);
+	    var buf = fr.result;
+		  decompressPage(buf, callback);
 	  }
 	  //fr.readAsBinaryString(blobSlice(dump, position, blocksize || 200000));
 	  fr.readAsArrayBuffer(blobSlice(dump, position, blocksize));
@@ -422,7 +391,7 @@ function requestChunk(url, pos, callback){
 	var xhr = new XMLHttpRequest(); //resuse object
 	//console.log('downloading ',url + "?"+Math.random(),'position',pos);
 	xhr.open('GET', url+ "?"+Math.random(), true);
-	xhr.setRequestHeader('Range', 'bytes='+pos+'-'+(pos+cs));
+	xhr.setRequestHeader('Range', 'bytes='+pos+'-'+(pos+chunksize));
 
 	xhr.responseType = 'arraybuffer';
 	xhr.onerror = function(){
