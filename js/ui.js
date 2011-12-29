@@ -212,8 +212,7 @@ var redirectCache = {};
 var linkCache = {};
 
 function checkLink(){
-return;
-  if(document.title == 'Index' || !fs) return;
+  if(document.title == 'Index') return;
   var link;
   while(link = document.getElementById('content').querySelector('a:not(.checked)')){
     var url = unescape(link.href.replace(/^.*\?|\#.*$/g,'')).toLowerCase().replace(/[^a-z0-9]/g,'');
@@ -229,16 +228,18 @@ return;
 }
 
 function checkLinkUncached(){
-return;
-  if(document.title == 'Index' || !fs) return;
+  if(index.progress() < 1) return;
+  if(document.title == 'Index') return;
   var link = document.getElementById('content').querySelector('a:not(.cached)');
   if(link && document.title != 'Index'){
     var url = unescape(link.href.replace(/^.*\?|\#.*$/g,'')).toLowerCase().replace(/[^a-z0-9]/g,'');
     runSearch(url, function(r){
       linkCache[url] = -1;
-      r.forEach(function(e){
-        linkCache[e.replace(/(>|\|).*$/g,'').toLowerCase().replace(/[^a-z0-9]/g,'')] = 1;
-      });
+      if(r){
+        r.forEach(function(e){
+          linkCache[e.replace(/(>|\|).*$/g,'').toLowerCase().replace(/[^a-z0-9]/g,'')] = 1;
+        });
+      }
       if(linkCache[url] == -1){
         link.className += ' new '
       }

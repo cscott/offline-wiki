@@ -98,6 +98,8 @@ function VirtualFile(name, size, chunksize, network){
       return new BlobBuilder()
     }else if(window.WebKitBlobBuilder){
       return new WebKitBlobBuilder();
+    }else if(window.MozBlobBuilder){
+      return new MozBlobBuilder();
     }
   }
 
@@ -118,6 +120,7 @@ function VirtualFile(name, size, chunksize, network){
   for(var i = 0; i < 256; i++){
     bits_in_char[i] = i.toString(2).replace(/0/g, '').length;
   }
+
   function popcount(){
     for(var i = 0, s = 0; i < bitfield.length; i++) s += bits_in_char[bitfield[i]];
     return s;
@@ -269,6 +272,7 @@ function VirtualFile(name, size, chunksize, network){
       if(e == false || redownload){
         if(getbit(chunk)) console.log('inconsistency arghleflarg');
         downloadContiguousChunks(chunk, 2, function(e){
+          //technically, this should work async, but firefox doesn't like it
           callback(e);
           //console.log('read from network store');
         });
@@ -283,12 +287,10 @@ function VirtualFile(name, size, chunksize, network){
   function downloadContiguousChunks(start, maximum, callback){
     var end = start + 1; //read minimum of one chunk
     while(!getbit(end) && (end - start) < maximum && end < chunks) end++;
-    console.log('reading', end-start,'chunks starting at',start);
+    //console.log('reading', end-start,'chunks starting at',start);
     readChunksXHR(start, end - start, function(e){
       //console.log("read from XHR", name, chunk);
-      if(e != false) writeChunksPersistent(start, e);
-      
-      callback(e);
+      if(e != false) writeChunksPersistent(start, e, callback);
     });
     
   }
@@ -303,22 +305,49 @@ function VirtualFile(name, size, chunksize, network){
     }
   }
   
-  function writeChunksPersistent(chunk, data){
+  function writeChunksPersistent(chunk, data, callback){
     if(fileEntry){
-      writeChunksFile(chunk, data);
+      writeChunksFile(chunk, data, callback);
     }else if(db){
-      var bb = createBlobBuilder();
-      bb.append(data);
-      var blob = bb.getBlob();
-      for(var i = 0; i < data.byteLength; i += chunksize){
-        writeChunkDB(chunk + i, blobSlice(blob, i * chunksize, chunksize));
+      writeChunksDB(chunk, data, callback);
+    }
+  }
+  
+  function writeChunksDB(chunk, data, callback){
+    /*var bb = createBlobBuilder();
+    bb.append(data);
+    var blob = bb.getBlob();
+    function writeBlobDB(chunk, blob){
+      var fr = new FileReader();
+      fr.onload = function(){
+        writeChunkDB(chunk, fr.result);
+      }
+      fr.readAsArrayBuffer(blob);
+    }*/
+    var fmt = new Uint8Array(data);
+    /*for(var i = 0; i < data.byteLength; i += chunksize){
+      var arr = new Uint8Array(chunksize);
+      arr.set(fmt.subarray(i, i + chunksize), 0);
+      //console.log(data.byteLength, arr.buffer.byteLength);
+      writeChunkDB(chunk + i/chunksize, arr.buffer);
+    }*/
+    var i = 0;
+    function iterate(){
+      if(i < data.byteLength){
+        var arr = new Uint8Array(chunksize);
+        arr.set(fmt.subarray(i, i + chunksize), 0);
+        writeChunkDB(chunk + i/chunksize, arr.buffer, iterate);
+        i += chunksize;
+      }else{
+        callback(data)
       }
     }
+    iterate();
   }
   
   
   
-  function writeChunksFile(chunk, data){
+  function writeChunksFile(chunk, data, callback){
     fileEntry.createWriter(function(fileWriter) {    
       if(fileWriter.readyState != 0){
         console.debug("sopmething weird happened, readySTate not zero", fileWriter.readyState);
@@ -334,6 +363,7 @@ function VirtualFile(name, size, chunksize, network){
             //console.log("wrote chunk", chunk + i/chunksize);
           }
           //console.log("wrote another chunk", popcount());
+          callback(data);
         }
       }
       var bb = createBlobBuilder();
@@ -348,7 +378,7 @@ function VirtualFile(name, size, chunksize, network){
       }else writeData();
     })
   }
-  function writeChunkDB(chunk, data){
+  function writeChunkDB(chunk, data, callback){
     var trans = db.transaction(['fs'], IDBTransaction.READ_WRITE);
     var store = trans.objectStore('fs');
     var req = store.put({
@@ -357,7 +387,8 @@ function VirtualFile(name, size, chunksize, network){
     });
     req.onsuccess = function(){
       setbit(chunk);
-      console.log('wrote another chunk (current count)', popcount());
+      callback(data);
+      //console.log('wrote another chunk (current count)', popcount());
     }
     req.onerror = function(e){
       console.log('write error', e);
@@ -386,14 +417,8 @@ function VirtualFile(name, size, chunksize, network){
     cursorRequest.onsuccess = function(e){
       var result = e.target.result;
       if(!!result == false) return callback(false);
-      
       //console.log(result);
-      var fr = new FileReader();
-      fr.onload = function(){
-        callback(fr.result);
-      }
-      fr.readAsArrayBuffer(result.value.data);
-      //callback(result.value.data);
+      callback(result.value.data);
     }
   }
   
@@ -403,11 +428,10 @@ function VirtualFile(name, size, chunksize, network){
   
   function readChunksXHR(chunk, size, callback){
     //return callback(false); //simulate offline
-    
     var xhr = new XMLHttpRequest();
     var url = network(chunk * chunksize);
     xhr.open('GET', url[0], true);
-    xhr.setRequestHeader('Range', 'bytes='+url[1]+'-'+(url[1] + chunksize*size));
+    xhr.setRequestHeader('Range', 'bytes='+url[1]+'-'+(url[1] + chunksize*size - 1));
     xhr.responseType = 'arraybuffer';
     xhr.onload = function(){
       if(xhr.status >= 200 && xhr.status < 300 && xhr.readyState == 4){
@@ -441,6 +465,7 @@ function VirtualFile(name, size, chunksize, network){
     var req = db.setVersion('0.1');
     req.onsuccess = function(){
       db.deleteObjectStore('fs');
+      console.log('successfully deleted object store');
     }
   }
   return {
@@ -553,7 +578,7 @@ function downloadDump(){
   if(dump_progress >= dump.getChunks()) return;
   dump.downloadContiguousChunks(dump_progress, Math.floor((1024 * 1024 * 4)/ dump.getChunksize()), function(){
     updateProgress();
-    setTimeout(downloadDump, 1000);
+    setTimeout(downloadDump, 100);
   });
 }
 
@@ -566,7 +591,7 @@ function downloadIndex(){
   
   index.downloadContiguousChunks(index_progress, Math.floor((1024 * 1024 * 2)/ index.getChunksize()), function(e){
     updateProgress();
-    setTimeout(downloadIndex, 1000);
+    setTimeout(downloadIndex, 100);
   })
   //});
 }
