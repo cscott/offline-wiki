@@ -9,43 +9,57 @@ function decompressPage(compressed, callback){
   
   worker.addEventListener('message', function(e){
     endtime = +new Date;
-    console.log("Decompression time", endtime - starttime);
-  	var block = e.data;
-  	var re = /=([^=\n\#\<\>\[\]\|\{\}]+)=\n\n\n\n/g;
-  	var matches = re.exec(block), lastIndex = 0;
-  	//console.log(block);
-	  while (matches){
-		  articleCache[matches[1].trim()] = block.slice(re.lastIndex, (matches = re.exec(block))?matches.index:undefined)
-		  //console.log(matches[1].trim())
+    console.log("Decompression time" + ( endtime - starttime));
+	  var block = e.data;
+	  if(block.length == 0){
+      block = decompressBuffer(compressed);	  
 	  }
+    handleDecompressed(block);
   	callback();
-  	//portal 2 is coming tomorrow so this is obligatory
-  	//window.companioncube = block;
   }, false);
   starttime = +new Date;
   worker.postMessage(compressed);
 }
+
+
+function handleDecompressed(block){
+	console.log(block.length);
+	var re = /=([^=\n\#\<\>\[\]\|\{\}]+)=\n\n\n\n/g;
+	var matches = re.exec(block), lastIndex = 0;
+	//console.log(block);
+  while (matches){
+	  articleCache[matches[1].trim()] = block.slice(re.lastIndex, (matches = re.exec(block))?matches.index:undefined)
+	  //console.log(matches[1].trim())
+  }
+	//portal 2 is coming tomorrow so this is obligatory
+	//window.companioncube = block;
+}
+
+function decompressBuffer(buffer){
+  var data = new Uint8Array(buffer);
+  var size = data.subarray(5, 13);
+  var int_size = size[0] | (size[1] << 8) | (size[2] << (8*2)) | (size[3] << (8*3)) | (size[4] << (8*4)) | (size[5] << (8*5));
+  var hptr = 0, dptr = 13;
+  var result = '';
+  LZMA.decompress({
+    readByte: function(){
+      return data[hptr++]
+    }
+  }, {
+    readByte: function(){
+      return data[dptr++]
+    }
+  }, {
+    writeByte: function(b){
+      result += String.fromCharCode(b)
+    }
+  }, int_size);
+  return decodeURIComponent(escape(result));
+}
+
 if(typeof window == 'undefined'){
   onmessage = function(e){
-    var data = new Uint8Array(e.data);
-    var size = data.subarray(5, 13);
-    var int_size = size[0] | (size[1] << 8) | (size[2] << (8*2)) | (size[3] << (8*3)) | (size[4] << (8*4)) | (size[5] << (8*5));
-    var hptr = 0, dptr = 13;
-    var result = '';
-    LZMA.decompress({
-      readByte: function(){
-        return data[hptr++]
-      }
-    }, {
-      readByte: function(){
-        return data[dptr++]
-      }
-    }, {
-      writeByte: function(b){
-        result += String.fromCharCode(b)
-      }
-    }, int_size);
-    postMessage(decodeURIComponent(escape(result)))
+    postMessage(decompressBuffer(e.data))
   }
 }
 

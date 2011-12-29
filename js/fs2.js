@@ -63,6 +63,7 @@ function VirtualFile(name, size, chunksize, network){
   var defaultsize = 1024 * 1024 * 1024 + 1;
   var initialized = false;
   var file, fileEntry, db;
+  var persistent = false;
   
   function testSliceType(){
 	  var bb = createBlobBuilder();
@@ -165,7 +166,9 @@ function VirtualFile(name, size, chunksize, network){
     console.log(f);
   }
   var rfs = (window.requestFileSystem||window.webkitRequestFileSystem);
+  var indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB;
   if(rfs && window.webkitStorageInfo){
+    persistent = true;
     webkitStorageInfo.requestQuota(webkitStorageInfo.PERSISTENT, defaultsize,
       function(grantedQuota){
         console.log("Granted quota:", grantedQuota)
@@ -182,8 +185,9 @@ function VirtualFile(name, size, chunksize, network){
       function(e){
         console.log("Quota Request error:", e)
       }); 
-  }else{
-    var indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB;
+  }else if(indexedDB){
+    persistent = true;
+
     if ('webkitIndexedDB' in window) {
       window.IDBTransaction = window.webkitIDBTransaction;
       window.IDBKeyRange = window.webkitIDBKeyRange;
@@ -202,7 +206,11 @@ function VirtualFile(name, size, chunksize, network){
         initialized = true;
       }
     }
+  }else{
+    console.log("no persistant storage space!");
+    initialized = true;
   }
+  
   
   function readBlock(position, blocksize, callback){
     var result = new Uint8Array(blocksize);
@@ -242,7 +250,7 @@ function VirtualFile(name, size, chunksize, network){
     return function(buffer){
       if(buffer == false){
         callback(false)
-      }else{
+      }else if(window.FileReader){
         var bb = createBlobBuilder();
         bb.append(buffer);
         var fr = new FileReader();
@@ -254,6 +262,11 @@ function VirtualFile(name, size, chunksize, network){
           console.error(e)
         }
         fr.readAsText(bb.getBlob())
+      }else{
+        var arr = new Uint8Array(buffer);
+        for(var i = 0, s = ''; i < arr.length; i++)
+          s += String.fromCharCode(arr[i]);
+        callback(decodeURIComponent(escape(s)));
       }
     }
   }
@@ -288,6 +301,7 @@ function VirtualFile(name, size, chunksize, network){
     var end = start + 1; //read minimum of one chunk
     while(!getbit(end) && (end - start) < maximum && end < chunks) end++;
     //console.log('reading', end-start,'chunks starting at',start);
+    
     readChunksXHR(start, end - start, function(e){
       //console.log("read from XHR", name, chunk);
       if(e != false) writeChunksPersistent(start, e, callback);
@@ -310,6 +324,8 @@ function VirtualFile(name, size, chunksize, network){
       writeChunksFile(chunk, data, callback);
     }else if(db){
       writeChunksDB(chunk, data, callback);
+    }else{
+      callback(data);
     }
   }
   
@@ -434,6 +450,7 @@ function VirtualFile(name, size, chunksize, network){
     xhr.setRequestHeader('Range', 'bytes='+url[1]+'-'+(url[1] + chunksize*size - 1));
     xhr.responseType = 'arraybuffer';
     xhr.onload = function(){
+      //console.log("xhr done woot"+xhr.response);
       if(xhr.status >= 200 && xhr.status < 300 && xhr.readyState == 4){
         callback(xhr.response);
       }else{
@@ -484,6 +501,7 @@ function VirtualFile(name, size, chunksize, network){
     progress: function(){
       return popcount() / chunks;
     },
+    persistent: persistent,
     downloadContiguousChunks: downloadContiguousChunks,
     readChunk: readChunk,
     reset: reset
@@ -532,6 +550,7 @@ function dumpurl(ptr){
 var index = VirtualFile('test_index', indexsize(), 1024 * 4, indexurl); //4KiB chunk size
 var dump = VirtualFile('test_dump', dumpsize(), 1024 * 500, dumpurl); //500KB chunk size (note, that it has to be a multiple of the underlying file subdivision size
 
+console.log("initialized fs");
 
 var index_progress = 0, dump_progress = 0;
 function beginDownload(){
@@ -543,7 +562,7 @@ function beginDownload(){
 
 function updateProgress(){
   var progress = (dump.progress() * dumpsize() + index.progress() * indexsize())/(dumpsize() + indexsize());
-  if(progress != 1){
+  if(progress != 1 && dump.persistent && index.persistent){
     updatePreview();
 	  document.getElementById('download').style.display = '';
   	document.getElementById('progress').value = progress;
@@ -566,7 +585,7 @@ function updatePreview(){
       updateProgress();
     })
   }else{
-    if(new Date - lastPreview.lastTime > 1337){
+    if(new Date - lastPreview.lastTime > 2718){
       lastPreview.title = lastPreview.entries[Math.floor(lastPreview.entries.length * (chunk - lastPreview.chunk) / shiftconst)] || '';
       lastPreview.lastTime = +new Date;
     }
@@ -574,24 +593,26 @@ function updatePreview(){
 }
 
 function downloadDump(){
+  if(!dump.persistent) return console.log("no persistent store");
   while(dump.checkChunk(dump_progress)) dump_progress++;
   if(dump_progress >= dump.getChunks()) return;
   dump.downloadContiguousChunks(dump_progress, Math.floor((1024 * 1024 * 4)/ dump.getChunksize()), function(){
     updateProgress();
-    setTimeout(downloadDump, 100);
+    setTimeout(downloadDump, 200);
   });
 }
 
 var lastTitleChange = 0;
 
 function downloadIndex(){
+  if(!index.persistent) return console.log("no persistent store");
   while(index.checkChunk(index_progress)) index_progress++;
   if(index_progress >= index.getChunks()) return;
   //index.readChunk(index_progress, function(){
   
   index.downloadContiguousChunks(index_progress, Math.floor((1024 * 1024 * 2)/ index.getChunksize()), function(e){
     updateProgress();
-    setTimeout(downloadIndex, 100);
+    setTimeout(downloadIndex, 200);
   })
   //});
 }
