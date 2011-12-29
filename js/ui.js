@@ -1,7 +1,11 @@
 
 function incrementSlider(pagesDelta){
 	var step = document.getElementById('slider').step - 0;
-	document.getElementById('slider').value -= pagesDelta * -step;
+	
+	do {
+  	document.getElementById('slider').value -= pagesDelta * -step;
+	} while((!index.checkBlock(+document.getElementById('slider').value)));
+	
 	updateIndex();
 }
 
@@ -14,11 +18,16 @@ function updateIndex(){
 	lastArticlePos = val + step/2;
 	
 	t(document.getElementById('title'), "Index: "+(1+(val/step))+" of "+Math.floor(1+(max/step)));	
-	readIndex(val - 200, step + 200, function(text){
-		document.getElementById('pageitems').innerHTML = '<a href="javascript:incrementSlider(-1)" class="prev">Previous</a> / <a class="next" href="javascript:incrementSlider(1)">Next</a><br>' + text.split('\n').slice(1, -1).map(function(x){
-			var title = x.split(/\||>/)[0];
-			return '<a href="?'+title+'">'+title+'</a>';
-		}).join("<br>");
+	index.readText(val - 200, step + 200, function(text){
+	  var content = 'Data Inaccessible or Corrupt';
+	  if(text){
+	    content = text.split('\n').slice(1, -1).map(function(x){
+			  var title = x.split(/\||>/)[0];
+			  var pos = parse64(x.split(/\||>/)[1]);
+			  return '<a href="?'+title+'" title="'+pos+'" class="'+((!isNaN(pos) && dump.checkBlock(pos))?'':'notcached')+'">'+title+'</a>';
+		  }).join("<br>")
+	  }
+		document.getElementById('pageitems').innerHTML = '<a href="javascript:incrementSlider(-1)" class="prev">Previous</a> / <a class="next" href="javascript:incrementSlider(1)">Next</a><br>' + content;
 	});
 }
 
@@ -43,30 +52,51 @@ function loadArticle(query){
   document.getElementById('settings').style.display = 'none'
   document.getElementById('content').style.display = ''
 	if(query == 'Special:Random'){
-		//this is actually much more complicated than it needs to be. but its probably
-		//simpler this way and requires less reafactoring, so meh.
-		
-		readIndex(Math.floor(accessibleIndex * Math.random()), 400, function(text){
-			var title = text && text.split('\n').slice(1,-1).filter(function(x){
-				  return !/\>/.test(x)
-			  });
-			if(title){
-			  loadArticle(title[Math.floor(title.length * Math.random())].split(/\||\>/)[0]);
-			}
-		});
+	  /*var ch = 0;
+		if(index.getChunks() == index.popcount()){
+		  ch = Math.floor(index.getChunks() * Math.random());
+		}else{
+		  for(var a = [], l = index.getChunks(); l--;){
+		    if(index.checkChunk(l)) a.push(l);
+		  }
+		  ch = a[Math.floor(a.length * Math.random())]
+		}*/
+		var online = true;
+		function randomPage(){
+		  index.readText(Math.floor(indexsize() * Math.random()), 400, function(text){
+		    if(text == false && online){
+		      online = false;
+		      console.log('online mode is off');
+	      }
+			  var title = text && text.split('\n').slice(1,-1).filter(function(x){
+				    return !/\>/.test(x)
+			    });
+			  if(title && title.length){
+			    var parts = title[Math.floor(title.length * Math.random())].split(/\||\>/);
+			    if(dump.checkBlock(parse64(parts[1])) || online){
+  			    loadArticle(parts[0]);
+			    }else{
+			      randomPage();
+          }
+			  }else{
+			    randomPage();
+			  }
+		  });
+		}
+		randomPage();
 		t(document.getElementById('title'), "Special:Random");	
 		return;
 	}
 	if(query == 'Special:Index'){
-		if(accessibleIndex == 0) return setTimeout(function(){
+		/*if(accessibleIndex == 0) return setTimeout(function(){
 			loadArticle(query);
-		}, 100);
+		}, 100);*/
 		t(document.getElementById('title'), "Index");	
 		document.title = "Index";
 		document.getElementById('content').innerHTML = "<input type=range id=slider> <div id=pageitems>";
 
 		var step = Math.floor((innerHeight - 80) * document.getElementById('content').scrollWidth/271.828 );
-		document.getElementById('slider').max = Math.floor(accessibleIndex/step)*step;
+		document.getElementById('slider').max = Math.floor(indexsize()/step)*step;
 		document.getElementById('slider').step = step;
 		document.getElementById('slider').value = Math.floor(lastArticlePos/step) * step;
 
@@ -242,7 +272,6 @@ document.body.onclick = function(e){
 
 function pophandler(e){
   var title = decodeURIComponent(location.search.substr(1));
-  console.log(title);
   if(lastArticle != title){
     loadArticle(title)
   } 
@@ -280,15 +309,17 @@ var articleCache = {};
 
 function readArticle(query, callback){
   //console.log("read article", query);
-	if(accessibleIndex < 100) return setTimeout(function(){
+	/*if(accessibleIndex < 100) return setTimeout(function(){
 		readArticle(query, callback);
-	}, 10);
+	}, 10);*/
 	findBlock(query, function(title, position, location){
 	  title = title.trim();
 	  //console.log(title, title in articleCache)
 		if(title in articleCache) return callback(title, articleCache[title], location);
-		readDump(position, function(){
-			callback(title, articleCache[title] || "==Page Not Found==", location);
+		dump.readBlock(position, 200000, function(buf){
+  		decompressPage(buf, function(){
+  			callback(title, articleCache[title] || "==Page Not Found==", location);
+      });
 		})
 	})
 }

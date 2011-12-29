@@ -8,7 +8,11 @@ function autocomplete(text, div, callback, onselect){
 		if(results.length) div.style.display = '';
 	}, true);
 	text.addEventListener('input', function(){
-		if(!text.value) return;
+		if(!text.value){
+  		div.innerHTML = '';
+  		div.style.display = 'none';
+		  return;
+	  }
 		callback(text.value, function(res){
 			div.innerHTML = '';
 			results = res.map(function(text){

@@ -639,10 +639,10 @@ InstaView.convert = function(wiki)
 			replace(/\[\[([^\]]*?:)?(.*?)( *\(.*?\))?\|\]\]/g, f("<a href='?$1$2$3'>$2</a>", InstaView.conf.paths.articles)).
  
 			// External links
-			replace(/\[(https?|news|ftp|mailto|gopher|irc):(\/*)([^\]]*?) (.*?)\]/g, "<a href='$1:$2$3'>$4</a>"). /**/
-			replace(/\[http:\/\/(.*?)\]/g, "<a href='http://$1'>[#]</a>").
-			replace(/\[(news|ftp|mailto|gopher|irc):(\/*)(.*?)\]/g, " <a href='$1:$2$3'>$1:$2$3</a>"). /**/
-			replace(/(^| )(https?|news|ftp|mailto|gopher|irc):(\/*)([^ $]*)/g, "$1 <a href='$2:$3$4'>$2:$3$4</a>"). /**/
+			replace(/\[(https?|news|ftp|mailto|gopher|irc):(\/*)([^\]]*?) (.*?)\]/g, "<a href='$1:$2$3' target=_blank>$4</a>"). /**/
+			replace(/\[http:\/\/(.*?)\]/g, "<a href='http://$1' target=_blank>[#]</a>").
+			replace(/\[(news|ftp|mailto|gopher|irc):(\/*)(.*?)\]/g, " <a href='$1:$2$3' target=_blank>$1:$2$3</a>"). /**/
+			replace(/(^| )(https?|news|ftp|mailto|gopher|irc):(\/*)([^ $]*)/g, "$1 <a href='$2:$3$4' target=_blank>$2:$3$4</a>"). /**/
  
 			replace('__NOTOC__','').
 			replace('__NOEDITSECTION__','');
