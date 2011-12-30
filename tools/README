@@ -1,3 +1,7 @@
+TODO: make sure you do the sorts with the -df option!
+HACK: cat pi.index | sort -df -t $'|' -k1,1 > pi2.index
+
+
 It's already happened before, I wrote all these utilities and forgot how to use them. In what order and what it does.
 
 bzip2 -dc pagecounts-2011-08-all.bz2 | grep '^en.z' | sed 's/ [^ ]*$//g' | sed -e '/ [1-9]$/d' | sed -e '/%5B/d' | sed -e 's/^en.z //' > output.txt

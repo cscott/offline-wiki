@@ -9,7 +9,7 @@ function decompressPage(compressed, callback){
   
   worker.addEventListener('message', function(e){
     endtime = +new Date;
-    console.log("Decompression time" + ( endtime - starttime));
+    console.log("Decompression time " + ( endtime - starttime));
 	  var block = e.data;
 	  if(block.length == 0){
       block = decompressBuffer(compressed);	  

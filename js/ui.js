@@ -228,6 +228,7 @@ function checkLink(){
 }
 
 function checkLinkUncached(){
+  return;
   if(index.progress() < 1) return;
   if(document.title == 'Index') return;
   var link = document.getElementById('content').querySelector('a:not(.cached)');
@@ -315,11 +316,22 @@ function readArticle(query, callback){
 	}, 10);*/
 	findBlock(query, function(title, position, location){
 	  title = title.trim();
+	  if(location < 0){
+	    var msg = 'An unknown error occurred in searching for the page.';
+	    if(location == -13) msg = 'No page with such a title was found in the index.'
+	    if(location == -29) msg = 'This page was caught in an infinite redirect loop.';
+	    return callback(title, "==Page Not Found==\n\n"+msg, 0);
+    }
 	  //console.log(title, title in articleCache)
-		if(title in articleCache) return callback(title, articleCache[title], location);
+		if(title in articleCache && articleCache[title]) return callback(title, articleCache[title], location);
 		dump.readBlock(position, 200000, function(buf){
   		decompressPage(buf, function(){
-  			callback(title, articleCache[title] || "==Page Not Found==", location);
+  			callback(title, articleCache[title] || (
+  			  "==Page Not Found==\n\n"+(
+  			    (title in articleCache)
+  			      ? "The page exists in the archive, but decompression yielded an empty page."
+  			      : "The page was found in the index, but not found in the archive.")
+			  ), location);
       });
 		})
 	})

@@ -29,6 +29,13 @@ function binarySearch(value, low, high, win, threshold, parser, callback){
 	}
 }
 
+
+
+function defaultParser(text){
+	return text && slugfy(text.split("\n")[1].split(/\||\>/)[0])
+}
+
+
 var midpointCache = {};
 function binarySearch2(value, callback){
   var low = 0, high = index.getChunks();
@@ -116,25 +123,28 @@ function binarySearch3_old(value, callback){
 
 function binarySearch3(value, callback){
   value = slugfy(value);
+  //http://en.wikipedia.org/wiki/Almost_integer
+  var almost = Math.pow(Math.E, Math.PI*Math.sqrt(43)) % 1;
   var low = 0, high = index.getChunks();
+  var chunksize = index.getChunksize();
   var terminate = false;
   var lastdiff = Infinity;
   
   function middle(center, cb){
-    var ms = center.toFixed(4);
+    var ms = center.toFixed(5);
     if(ms in midpointCache) return cb(midpointCache[ms]);
     var block = Math.floor(center);
     var rem = center % 1;
     index.readChunkText(block, function(e){
-      var c = Math.round(rem * e.length);
+      var c = Math.round(rem * chunksize);
       var n = 0, s;
       do {
         n++;
         s = e.slice(Math.max(0, c - n), c + n)
       } while(!/\n.*\n/.test(s));
       var r = slugfy(s.match(/\n(.*)\n/)[1].split(/\||>/)[0]);
-      var nlow = block + Math.max(0, c - n - 137)/e.length;
-      var nhigh = block + (c + n + 137)/e.length;
+      var nlow = block + Math.max(0, c - n - 137)/chunksize;
+      var nhigh = block + Math.min(1,(c + n + 137)/chunksize);
       cb(midpointCache[ms] = [r, nlow, nhigh])
     })
   }
@@ -142,13 +152,14 @@ function binarySearch3(value, callback){
   function core(){
     if(terminate) return;
     var center = low/2 + high/2;
-    if(Math.abs(lastdiff - (high - low)) < 0.03){
+    if(Math.abs(lastdiff - (high - low)) < 0.001){
       //console.log(value, center);
+      //console.log('terminating');
       return callback(center);
     }
     lastdiff = high - low;
     middle(center, function(x){
-      //console.log(x[0]);
+      //console.log(x[0] < value ? 'low' : 'high', x[0], low, high, x[1], x[2]);
       if(x[0] < value) low = x[1];
       else if(x[0] > value) high = x[2];
       core();
@@ -159,8 +170,37 @@ function binarySearch3(value, callback){
 }
 
 
-function defaultParser(text){
-	return text && slugfy(text.split("\n")[1].split(/\||\>/)[0])
+function runSearch(query, callback, fuzzy){
+  var c = index.getChunksize();
+	//binarySearch(slugfy(query), 0, indexsize(), 200, 800, defaultParser, function(low, high, res){
+	return binarySearch3(query, function(midchunk){
+	  var mid = midchunk * index.getChunksize();
+	  //var high = h * c, low = l * c;
+	  //binarySearch(slugfy(query), l * c, h * c, 200, 800, defaultParser, function(low, high, res){
+	    //if(low === false) return callback(false);
+	    var win = 800;
+	    //console.log(mid)
+		  index.readText(mid - win, win * 2, function(text){
+		    //console.log(text);
+		    if(text == false) return callback(false);
+			  //console.log(text);
+		    var results = text.split('\n').slice(1, -1)
+			  .filter(function(x){
+			    var parts = x.split(/\||\>/), title = parts[0], ptr = parts[1];
+			    return title && (fuzzy || (title.toLowerCase().trim().replace(/[^a-z0-9]/g,'') == query.toLowerCase().trim().replace(/[^a-z0-9]/g,'')))
+			  });
+			  if(fuzzy != 2){
+			    results = results.map(function(x){
+				    var parts = x.split(/\||\>/), title = parts[0].replace(/_/g, ' '), ptr = parts[1];
+				    return {title: title, pointer: /\>/.test(x) ? ptr : parse64(ptr), redirect: /\>/.test(x), score: scoreResult(title, query)}
+			    }).sort(function(a, b){
+				    return a.score - b.score
+			    })
+			  }
+			  callback(results, mid);
+		  })
+		//})
+	})
 }
 
 
@@ -257,47 +297,16 @@ function findBlock(query, callback){
 
 	runSearch(query, function(results, pos){
 		if(!results[0]){
-		  callback(query, 0, 0);
+		  callback(query, 0, -13);
 		}else if(results[0].redirect){
 		  if(results[0].pointer != query){
 			  findBlock(results[0].pointer, callback)
 			}else{
-			  callback(query, 0, 0);
+			  callback(query, 0, -29);
 			}
 		}else{
 			callback(results[0].title, results[0].pointer, pos)
 		}
-	})
-}
-
-function runSearch(query, callback, fuzzy){
-  var c = index.getChunksize();
-	//binarySearch(slugfy(query), 0, indexsize(), 200, 800, defaultParser, function(low, high, res){
-	return binarySearch3(query, function(midchunk){
-	  var mid = midchunk * index.getChunksize();
-	  //var high = h * c, low = l * c;
-	  //binarySearch(slugfy(query), l * c, h * c, 200, 800, defaultParser, function(low, high, res){
-	    //if(low === false) return callback(false);
-	    var win = 800;
-		  index.readText(mid - win, win * 2, function(text){
-		    if(text == false) return callback(false);
-			  //console.log(text);
-		    var results = text.split('\n').slice(1, -1)
-			  .filter(function(x){
-			    var parts = x.split(/\||\>/), title = parts[0], ptr = parts[1];
-			    return title && (fuzzy || (title.toLowerCase().trim().replace(/[^a-z0-9]/g,'') == query.toLowerCase().trim().replace(/[^a-z0-9]/g,'')))
-			  });
-			  if(fuzzy != 2){
-			    results = results.map(function(x){
-				    var parts = x.split(/\||\>/), title = parts[0].replace(/_/g, ' '), ptr = parts[1];
-				    return {title: title, pointer: /\>/.test(x) ? ptr : parse64(ptr), redirect: /\>/.test(x), score: scoreResult(title, query)}
-			    }).sort(function(a, b){
-				    return a.score - b.score
-			    })
-			  }
-			  callback(results, mid);
-		  })
-		//})
 	})
 }
 
@@ -368,6 +377,8 @@ function utfdec(input) {
 
 function slugfy(text){
   if(!text) return '';
+  return text.toLowerCase().replace(/[^a-z0-9]/g,'')
+  /*
   var ret = "";
   text = text.toLowerCase();
   //text = utfdec(text);
@@ -384,7 +395,7 @@ function slugfy(text){
         .replace(/([a-zA-Z])(uml|acute|grave|circ|tilde|cedil)/g, '$1')
         .replace(/[^a-zA-Z0-9_]/g, ' ')
         .replace(/ +/g, '')
-        .trim()
+        .trim()*/
 }
 function scoreResult(result, query){
   /*
