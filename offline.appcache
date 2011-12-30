@@ -4,14 +4,17 @@ CACHE MANIFEST
 CACHE:
 app.html
 styles.css
-js/slugfy.js
-js/ui.js
-js/damlev.js
-js/html5slider.js
-js/fs.js
-js/autocomplete.js
-js/lzma.js
-js/render.js
+progress-polyfill.css
+
+js/autocomplete.js  
+js/search.js  
+js/html5slider.js  
+js/progress-polyfill.js  
+js/lzma.js  
+js/render.js  
+js/ui.js  
+js/fs2.js  
+
 image/bg.png
 image/xkcd.png
 

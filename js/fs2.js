@@ -62,20 +62,20 @@ function VirtualFile(name, size, chunksize, network){
   //var blocksize = 1 * 1024 //200 * 1024; //blocksize must be < chunksize
   var defaultsize = 1024 * 1024 * 1024 + 1;
   var initialized = false;
-  var file, fileEntry, db;
+  var file, fileEntry, db, sql;
   var persistent = false;
   
   function testSliceType(){
-	  var bb = createBlobBuilder();
-	  bb.append("elitistland");
-	  var number = bb.getBlob().slice(3,5).size;
-	  if(number == 5){
-		  blobType = 1
-	  }else if(number == 2){
-		  blobType = 2;
-	  }else{
-		  alert("Apparently the future, assuming you are in the future, is really messed up by mid-2011 standards.");
-	  }
+    var bb = createBlobBuilder();
+    bb.append("elitistland");
+    var number = bb.getBlob().slice(3,5).size;
+    if(number == 5){
+      blobType = 1
+    }else if(number == 2){
+      blobType = 2;
+    }else{
+      alert("Apparently the future, assuming you are in the future, is really messed up by mid-2011 standards.");
+    }
   }
 
   
@@ -106,7 +106,7 @@ function VirtualFile(name, size, chunksize, network){
 
   function setbit(n){
     bitfield[~~(n/8)] = bitfield[~~(n/8)] | (1 << (n % 8));
-    localStorage[name+'_bitset'] = b64();
+    localStorage[name+'_bitset'] = b64(bitfield);
   }
   function getbit(n){
     return ((bitfield[~~(n/8)] & (1 << (n % 8))) >> (n % 8));
@@ -127,8 +127,7 @@ function VirtualFile(name, size, chunksize, network){
     return s;
   }
   var D = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+/=";
-  function b64(){
-    var B = bitfield;
+  function b64(B){
     var s = '';
     for(var i = 0; i < B.length; i += 3){
       var a = B[i], b = B[i + 1], c = B[i + 2];
@@ -173,7 +172,7 @@ function VirtualFile(name, size, chunksize, network){
       function(grantedQuota){
         console.log("Granted quota:", grantedQuota)
         rfs(window.PERSISTENT, defaultsize, function(filesystem){
-          filesystem.root.getFile(name, {create:true, exclusive: false}, function(e){
+          filesystem.root.getFile(name+'_fs', {create:true, exclusive: false}, function(e){
             fileEntry = e;
             e.file(function(f){
               file = f;
@@ -192,7 +191,7 @@ function VirtualFile(name, size, chunksize, network){
       window.IDBTransaction = window.webkitIDBTransaction;
       window.IDBKeyRange = window.webkitIDBKeyRange;
     }
-    var req = indexedDB.open(name);
+    var req = indexedDB.open(name+'_indexed');
     req.onsuccess = function(e){
       var v = '2.718';
       db = e.target.result;
@@ -206,11 +205,25 @@ function VirtualFile(name, size, chunksize, network){
         initialized = true;
       }
     }
-  }else{
+  }else if(window.openDatabase){
+    persistent = true;
+    console.log('opening websql database');
+    sql = openDatabase(name+'_sql', '1.0', 'Offline Wiki '+name, 1024 * 1024 * 1024);
+    console.log('got db');
+    sql.transaction(function(tx){
+      tx.executeSql('CREATE TABLE IF NOT EXISTS fs (chunk PRIMARY KEY, data)');
+    }, SQLErrorHandler, function(){
+      initialized = true;
+    })
+  }else {
     console.log("no persistant storage space!");
     initialized = true;
   }
   
+  
+  function SQLErrorHandler(e){
+    console.log(e.message)
+  }
   
   function readBlock(position, blocksize, callback){
     var result = new Uint8Array(blocksize);
@@ -299,6 +312,7 @@ function VirtualFile(name, size, chunksize, network){
   
   function downloadContiguousChunks(start, maximum, callback){
     var end = start + 1; //read minimum of one chunk
+    if(start > chunks) return callback(false);
     while(!getbit(end) && (end - start) < maximum && end < chunks) end++;
     //console.log('reading', end-start,'chunks starting at',start);
     
@@ -314,15 +328,36 @@ function VirtualFile(name, size, chunksize, network){
       readChunkFile(chunk, callback);
     }else if(db){
       readChunkDB(chunk, callback);
+    }else if(sql){
+      readChunkSql(chunk, callback);
     }else{
       callback(false); 
     }
   }
   
+  function readChunkSql(chunk, callback){
+    sql.readTransaction(function (t) {
+      t.executeSql('SELECT data FROM fs WHERE chunk=?', [chunk], function (t, r) {
+        //span.textContent = r.rows[0].c;
+        if(r.rows.length == 0){
+          callback(false);
+        }else{
+          var ta = d64(r.rows.item(0).data);
+          //console.log('reading sql', ta.length);
+          callback(ta.buffer);
+        }
+      }, function (t, e) {
+        // couldn't read database
+        console.log('(unknown: ' + e.message + ')');
+      });
+    });
+  }
+  
+  
   function writeChunksPersistent(chunk, data, callback){
     if(fileEntry){
       writeChunksFile(chunk, data, callback);
-    }else if(db){
+    }else if(db || sql){
       writeChunksDB(chunk, data, callback);
     }else{
       callback(data);
@@ -394,7 +429,29 @@ function VirtualFile(name, size, chunksize, network){
       }else writeData();
     })
   }
+  
   function writeChunkDB(chunk, data, callback){
+    if(db){
+      writeChunkIndexedDB(chunk, data, callback);
+    }else if(sql){
+      writeChunkSql(chunk, data, callback);
+    }
+  }
+  
+  
+  function writeChunkSql(chunk, data, callback){
+
+    sql.transaction(function(tx){
+      var arr = new Uint8Array(data);
+      //console.log('writing sql', arr.length);
+      tx.executeSql('INSERT OR REPLACE INTO fs VALUES (?, ?)', [chunk, b64(arr)]);
+    }, SQLErrorHandler, function(){
+      setbit(chunk);
+      callback(data);
+    })
+  }
+  
+  function writeChunkIndexedDB(chunk, data, callback){
     var trans = db.transaction(['fs'], IDBTransaction.READ_WRITE);
     var store = trans.objectStore('fs');
     var req = store.put({
@@ -468,8 +525,11 @@ function VirtualFile(name, size, chunksize, network){
       resetDB(); 
     }else if(fileEntry){
       resetFile();
+    }else if(sql){
+      resetSql();
     }
     localStorage[name+'_bitset'] = '';
+    initialized = false;
   }
   
   function resetFile(){
@@ -484,6 +544,14 @@ function VirtualFile(name, size, chunksize, network){
       db.deleteObjectStore('fs');
       console.log('successfully deleted object store');
     }
+  }
+  
+  function resetSql(){
+    sql.transaction(function(tx){
+      tx.executeSql('DROP TABLE fs');
+    }, SQLErrorHandler, function(){
+      console.log('successfully terminated websql');
+    })
   }
   return {
     readBlock: readBlock,
@@ -530,7 +598,8 @@ onstorage = function(e){
   }
 }
 
-
+var indexsize, dumpsize, indexurl, dumpurl;
+/*
 function indexsize(){
   return 7924566;
 }
@@ -545,12 +614,74 @@ function dumpurl(ptr){
   return ['/Downloads/split2/splitpi/pi_' +
   'aa,ab,ac,ad,ae,af,ag,ah,ai,aj,ak'.split(',')[Math.floor(ptr / CHUNK_SIZE)],
     ptr % CHUNK_SIZE];
+}*/
+
+
+var dumps = {
+  leet: {
+    indexsize: 27509,
+    dumpsize: 13688465,
+    indexurl: 'http://offline-wiki.googlecode.com/files/1337.new.index',
+    dumpurl: 'http://offline-wiki.googlecode.com/files/1337.lzma',
+  },
+  local_leet: {
+    indexsize: 27509,
+    dumpsize: 13688465,
+    indexurl: '/Downloads/split2/old/1337.new.index',
+    dumpurl: '/Downloads/split2/old/1337.lzma',
+  },
+  local_pi: {
+    indexsize: 7924566,
+    dumpsize: 1025405491,
+    indexurl: '/Downloads/split2/pi.index',
+    dumpurl: function(ptr){
+      var CHUNK_SIZE = 100000000;
+      return ['/Downloads/split2/splitpi/pi_' +
+      'aa,ab,ac,ad,ae,af,ag,ah,ai,aj,ak'.split(',')[Math.floor(ptr / CHUNK_SIZE)],
+        ptr % CHUNK_SIZE];
+    }
+  },
+  pi: {
+    indexsize: 7924566,
+    dumpsize: 1025405491,
+    indexurl: 'http://offline-wiki.googlecode.com/files/pi.index',
+    dumpurl: function(ptr){
+      var CHUNK_SIZE = 100000000;
+      return ['http://offline-wiki.googlecode.com/files/pi_' +
+      'aa,ab,ac,ad,ae,af,ag,ah,ai,aj,ak'.split(',')[Math.floor(ptr / CHUNK_SIZE)],
+        ptr % CHUNK_SIZE];
+    }
+  }
 }
 
-var index = VirtualFile('test_index', indexsize(), 1024 * 4, indexurl); //4KiB chunk size
-var dump = VirtualFile('test_dump', dumpsize(), 1024 * 500, dumpurl); //500KB chunk size (note, that it has to be a multiple of the underlying file subdivision size
+var index, dump;
 
-console.log("initialized fs");
+function switch_dump(name, dft){
+  if(!dumps[name] && dft){name = dft}
+  if((location.host=='localhost' || /\.local/.test(location.host)) && !/local_/.test(name)) name = 'local_'+name;
+  document.getElementById('dump').value = name.replace('local_','');
+  var d = dumps[name];
+  //dumpname = name;
+  localStorage.dumpname = name;
+  
+  indexsize = function(){return d.indexsize};
+  dumpsize = function(){return d.dumpsize};
+  indexurl = typeof d.indexurl == 'function' ? d.indexurl : function(p){return [d.indexurl, p]};
+  dumpurl = typeof d.dumpurl == 'function' ? d.dumpurl : function(p){return [d.dumpurl, p]};
+
+  index = VirtualFile(name+'_index', indexsize(), 1024 * 4, indexurl); //4KiB chunk size
+  dump = VirtualFile(name+'_dump', dumpsize(), 1024 * 500, dumpurl); //500KB chunk size (note, that it has to be a multiple of the underlying file subdivision size
+
+  console.log("initialized fs "+name);
+
+}
+switch_dump(localStorage.dumpname, 'leet');
+
+
+setTimeout(updateProgress, 10);
+setTimeout(beginDownload, 1337);
+
+
 
 var index_progress = 0, dump_progress = 0;
 function beginDownload(){
@@ -564,13 +695,13 @@ function updateProgress(){
   var progress = (dump.progress() * dumpsize() + index.progress() * indexsize())/(dumpsize() + indexsize());
   if(progress != 1 && dump.persistent && index.persistent){
     updatePreview();
-	  document.getElementById('download').style.display = '';
-  	document.getElementById('progress').value = progress;
-  	document.getElementById('download').title = (100 * progress).toFixed(5)+"%";
-		document.getElementById('status').innerHTML = '<b>Downloading</b> <a href="?'+lastPreview.title+'">'+lastPreview.title+'</a>';
-	}else{
-  	document.getElementById('download').style.display = 'none';
-	}
+    document.getElementById('download').style.display = '';
+    document.getElementById('progress').value = progress;
+    document.getElementById('download').title = (100 * progress).toFixed(5)+"%";
+    document.getElementById('status').innerHTML = '<b>Downloading</b> <a href="?'+lastPreview.title+'">'+lastPreview.title+'</a>';
+  }else{
+    document.getElementById('download').style.display = 'none';
+  }
 }
 
 var lastPreview = {chunk: -999, entries: [], title: '', lastTime: 0};
@@ -617,8 +748,6 @@ function downloadIndex(){
   //});
 }
 
-setTimeout(updateProgress, 10);
-setTimeout(beginDownload, 1337);
 
 function nero(){
   index.reset();

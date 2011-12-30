@@ -23,7 +23,6 @@ function decompressPage(compressed, callback){
 
 
 function handleDecompressed(block){
-	console.log(block.length);
 	var re = /=([^=\n\#\<\>\[\]\|\{\}]+)=\n\n\n\n/g;
 	var matches = re.exec(block), lastIndex = 0;
 	//console.log(block);
