@@ -252,7 +252,7 @@ autocomplete(document.getElementById('search'), document.getElementById('autocom
 
 
 
-	//if(downloading) return callback(["Downloading... Please Wait"]);
+
 	//if(autocompleteWorker) autocompleteWorker();
 	
 	autocompleteWorker = runSearch(query, function(results){

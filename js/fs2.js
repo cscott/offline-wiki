@@ -579,7 +579,7 @@ function VirtualFile(name, size, chunksize, network){
 
 var can_download = true;
 var concurrencyKey = +new Date;
-var downloading = false;
+var downloading_dump = false, downloading_index = false;
 
 function check_download(){
   can_download = true;
@@ -672,22 +672,22 @@ function switch_dump(name, dft){
   index = VirtualFile(name+'_index', indexsize(), 1024 * 4, indexurl); //4KiB chunk size
   dump = VirtualFile(name+'_dump', dumpsize(), 1024 * 500, dumpurl); //500KB chunk size (note, that it has to be a multiple of the underlying file subdivision size
 
-  console.log("initialized fs "+name);
 
+  console.log("initialized fs "+name);
+  setTimeout(updateProgress, 10);
+  setTimeout(beginDownload, 1337);
 }
 switch_dump(localStorage.dumpname, 'leet');
 
 
-setTimeout(updateProgress, 10);
-setTimeout(beginDownload, 1337);
 
 
 
 var index_progress = 0, dump_progress = 0;
 function beginDownload(){
   updateProgress();
-  downloadDump();
-  downloadIndex();
+  if(!downloading_dump) downloadDump();
+  if(!downloading_index) downloadIndex();
 }
 
 
@@ -724,9 +724,11 @@ function updatePreview(){
 }
 
 function downloadDump(){
+  downloading_dump = false;
   if(!dump.persistent) return console.log("no persistent store");
   while(dump.checkChunk(dump_progress)) dump_progress++;
   if(dump_progress >= dump.getChunks()) return;
+  downloading_dump = true;
   dump.downloadContiguousChunks(dump_progress, Math.floor((1024 * 1024 * 2)/ dump.getChunksize()), function(){
     updateProgress();
     setTimeout(downloadDump, 200);
@@ -736,11 +738,12 @@ function downloadDump(){
 var lastTitleChange = 0;
 
 function downloadIndex(){
+  downloading_index = false;
   if(!index.persistent) return console.log("no persistent store");
   while(index.checkChunk(index_progress)) index_progress++;
   if(index_progress >= index.getChunks()) return;
   //index.readChunk(index_progress, function(){
-  
+  downloading_index = true;  
   index.downloadContiguousChunks(index_progress, Math.floor((1024 * 1024 * 1)/ index.getChunksize()), function(e){
     updateProgress();
     setTimeout(downloadIndex, 200);
