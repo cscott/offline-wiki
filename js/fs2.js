@@ -64,6 +64,7 @@ function VirtualFile(name, size, chunksize, network){
   var initialized = false;
   var file, fileEntry, db, sql;
   var persistent = false;
+  var terminate = false;
   
   function testSliceType(){
     var bb = createBlobBuilder();
@@ -324,6 +325,7 @@ function VirtualFile(name, size, chunksize, network){
   }
   
   function readChunkPersistent(chunk, callback){
+    if(terminate) return;
     if(fileEntry){
       readChunkFile(chunk, callback);
     }else if(db){
@@ -355,6 +357,7 @@ function VirtualFile(name, size, chunksize, network){
   
   
   function writeChunksPersistent(chunk, data, callback){
+    if(terminate) return;
     if(fileEntry){
       writeChunksFile(chunk, data, callback);
     }else if(db || sql){
@@ -508,6 +511,7 @@ function VirtualFile(name, size, chunksize, network){
     xhr.responseType = 'arraybuffer';
     xhr.onload = function(){
       //console.log("xhr done woot"+xhr.response);
+      if(terminate) return;
       if(xhr.status >= 200 && xhr.status < 300 && xhr.readyState == 4){
         callback(xhr.response);
       }else{
@@ -572,6 +576,9 @@ function VirtualFile(name, size, chunksize, network){
     persistent: persistent,
     downloadContiguousChunks: downloadContiguousChunks,
     readChunk: readChunk,
+    terminate: function(){
+      terminate = true
+    },
     reset: reset
   };
 }
@@ -598,6 +605,7 @@ onstorage = function(e){
   }
 }
 
+var index, dump;
 var indexsize, dumpsize, indexurl, dumpurl;
 /*
 function indexsize(){
@@ -654,7 +662,7 @@ var dumps = {
   }
 }
 
-var index, dump;
+var index = null, dump = null;
 
 function switch_dump(name, dft){
   if(!dumps[name] && dft){name = dft}
@@ -664,14 +672,19 @@ function switch_dump(name, dft){
   //dumpname = name;
   localStorage.dumpname = name;
   
+  if(index) index.terminate();
+  if(dump) dump.terminate();
+  
   indexsize = function(){return d.indexsize};
   dumpsize = function(){return d.dumpsize};
   indexurl = typeof d.indexurl == 'function' ? d.indexurl : function(p){return [d.indexurl, p]};
   dumpurl = typeof d.dumpurl == 'function' ? d.dumpurl : function(p){return [d.dumpurl, p]};
 
+  index_progress = 0;
+  dump_progress = 0;
+
   index = VirtualFile(name+'_index', indexsize(), 1024 * 4, indexurl); //4KiB chunk size
   dump = VirtualFile(name+'_dump', dumpsize(), 1024 * 500, dumpurl); //500KB chunk size (note, that it has to be a multiple of the underlying file subdivision size
-
 
   console.log("initialized fs "+name);
   setTimeout(updateProgress, 10);
@@ -723,14 +736,17 @@ function updatePreview(){
   }
 }
 
+var stop_download = false;
+
 function downloadDump(){
+  if(stop_download) return;
   downloading_dump = false;
   if(!dump.persistent) return console.log("no persistent store");
   while(dump.checkChunk(dump_progress)) dump_progress++;
   if(dump_progress >= dump.getChunks()) return;
-  downloading_dump = true;
   dump.downloadContiguousChunks(dump_progress, Math.floor((1024 * 1024 * 2)/ dump.getChunksize()), function(){
     updateProgress();
+    downloading_dump = true;
     setTimeout(downloadDump, 200);
   });
 }
@@ -738,14 +754,15 @@ function downloadDump(){
 var lastTitleChange = 0;
 
 function downloadIndex(){
+  if(stop_download) return;
   downloading_index = false;
   if(!index.persistent) return console.log("no persistent store");
   while(index.checkChunk(index_progress)) index_progress++;
   if(index_progress >= index.getChunks()) return;
   //index.readChunk(index_progress, function(){
-  downloading_index = true;  
   index.downloadContiguousChunks(index_progress, Math.floor((1024 * 1024 * 1)/ index.getChunksize()), function(e){
     updateProgress();
+    downloading_index = true;  
     setTimeout(downloadIndex, 200);
   })
   //});

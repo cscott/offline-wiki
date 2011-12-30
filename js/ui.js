@@ -34,7 +34,8 @@ function updateIndex(){
 var lastArticlePos = 0;
 
 function loadArticle(query){
-  //console.log("load article", query);
+  if(lastArticle == query) return;
+  console.log("load article", query);
   lastArticle = query;
 	query = query.replace(/w(ikipedia)?:/,'');
 	query = query.replace(/_/g, ' ');

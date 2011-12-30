@@ -54,47 +54,50 @@
     
     <div id="container">
       <div id="settings" style="display:none">
+        <!--
         <p>
           This is the settings page. One day, in the distant future, this will be idealistic and overflowing with neat tools and great notions.
 
 
-        </p>
-        <p>
-        Select the parsing engine. This takes the wikitext and turns it into html which is then meant for human eyes.
-        </p>
-<p>
-        <select id="parser">
-          <option value="instawiki">InstaView Parser</option>
-          <option value="source">Source View</option>
-          <option value="splus">Enhanced Source View</option>
-          <option value="basic">Basic Parser</option>
-        </select>
-   </p>
+        </p>-->
+
     <p>
-  Select which file you want to use. There isn't much to choose from, I know, and that probably won't change.
+  <b>Select the file</b> you want to use. There isn't much to choose from, I know. I'm sorry.
   </p>
    <p>
     <select id="dump" onchange="switch_dump(this.value)">
-      <option value="pi">314k December 2011 (1GB) </option>
       <option value="leet">1337 December 2011 (13.7MB)</option>
+      <option value="pi">314k December 2011 (1GB) </option>
     </select>
    </p>
+    <p>
+    Select the <b>parsing engine</b>. This takes the wikitext and turns it into html which is then meant for human eyes.
+    </p>
+<p>
+    <select id="parser">
+      <option value="instawiki">InstaView Parser</option>
+      <option value="source">Source View</option>
+      <option value="splus">Enhanced Source View</option>
+      <option value="basic">Basic Parser</option>
+    </select>
+   </p>
+    <p>
+      This will <b>pause the current downloads</b> for the remainder of this session.
+    </p>   
    <p>
-   Note that this button probably won't do anything if it's not downloading anything already.
-   <button onclick="stop_download=true">Stop downloads</button>
+
+   <button onclick="stop_download=true;this.disabled=true">Stop downloads</button>
    </p>     
    <p>
-   Boom.    <button onclick="nero()">DELETE THE HARD DRIVE</button>
+    This will <b>delete the current dump</b> from your computer. The file can be downloaded again.
+   </p>
+   <p>
+   <button onclick="nero()">Delete dump</button>
    </p>
       </div>
       <article id="content">
-        <p>
-
-        This paragraph is still in the process of being rewritten. I'm actually rewriting it now, but there's a good chance that these words won't be the same words as the final. I'm not exactly sure I'm writing these non-final words instead of writing some more final words, but I don't feel frankly in the mood to write final words.
-        </p>
-        
-
-<img id="xkcd" src="image/xkcd.png" usemap="#xkcd" border="0" width="500" height="503" alt="" title="I'm going to credit xkcd here-- where the witty commentary should be." />
+        <h2>Introduction</h2>
+  <img id="xkcd" src="image/xkcd.png" usemap="#xkcd" border="0" style="float:right;margin-left:15px;" width="500" height="503" alt="" title="The obligatory xkcd strip." />
 <map id="xkcd" name="xkcd">
 <area shape="rect" coords="148,75,345,103" href="?Tacoma_Narrows_Bridge" alt="" title=""    />
 <area shape="rect" coords="138,113,225,151" href="?Suspension_bridge" alt="" title=""    />
@@ -109,7 +112,33 @@
 <area shape="rect" coords="404,406,464,431" href="?T-shirt" alt="" title=""    />
 <area shape="rect" coords="392,441,487,487" href="?Wet_T-shirt_contest" alt="" title=""    />
 </map>
+
+        This application saves and <b>downloads a copy</b> of nearly all of the textual content of the <b>English Wikipedia</b> locally so that it can be <b>accessed without internet connectivity</b>. It downloads and saves a compressed dump file and an index, 14MB for the small version and 1GB for the larger one (you can select which one from the <a href="?Special:Settings">settings</a>). Using WebWorkers and the File API, it seeks to a specific part of the compressed dump, decompresses it with a pure javascript implementation of LZMA and renders the Wikitext as HTML. All of this happens almost <b>instantly</b>.
+
+        <h2>Checking Compatibility</h2>
+        <ul>
+        <script>
+          function test(name, val){
+            document.write('<li>'+(val?'<span style="color:green">':'<span style="color:red">')+name+'</span></li>');
+          }
+          test('FileReader support', !!window.FileReader);
+          test('WebSQL support (optional)', !!window.openDatabase)
+          test('IndexedDB support (optional)', window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB);
+          test('FileSystem API (optional)', window.requestFileSystem || window.webkitRequestFileSystem);
+          test('BlobBuilder', window.WebKitBlobBuilder || window.BlobBuilder || window.MozBlobBuilder);
+          test('Typed Arrays', window.Uint8Array);
+          test('Array Buffer', window.ArrayBuffer);
+          test('XHR responseType', 'responseType' in (new XMLHttpRequest))
+          test('Offline Application Cache', window.applicationCache);
+          test('WebWorkers', window.Worker);
+          test('History replaceState', history.replaceState);
+          test('Local Storage', window.localStorage);
+          test('querySelectorAll', document.querySelectorAll);
+        </script>
+        </ul>
+
             
+<div style="clear: both;"></div>
       </article>
     </div>
     
