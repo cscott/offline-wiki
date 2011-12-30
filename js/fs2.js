@@ -554,6 +554,7 @@ function VirtualFile(name, size, chunksize, network){
     })
   }
   return {
+    fsapi: !!rfs,
     readBlock: readBlock,
     readText: readText,
     readChunkText: readChunkText,
@@ -727,7 +728,7 @@ function downloadDump(){
   if(!dump.persistent) return console.log("no persistent store");
   while(dump.checkChunk(dump_progress)) dump_progress++;
   if(dump_progress >= dump.getChunks()) return;
-  dump.downloadContiguousChunks(dump_progress, Math.floor((1024 * 1024 * 4)/ dump.getChunksize()), function(){
+  dump.downloadContiguousChunks(dump_progress, dump.fsapi?Math.floor((1024 * 1024 * 4)/ dump.getChunksize()):2, function(){
     updateProgress();
     setTimeout(downloadDump, 200);
   });
@@ -741,7 +742,7 @@ function downloadIndex(){
   if(index_progress >= index.getChunks()) return;
   //index.readChunk(index_progress, function(){
   
-  index.downloadContiguousChunks(index_progress, Math.floor((1024 * 1024 * 2)/ index.getChunksize()), function(e){
+  index.downloadContiguousChunks(index_progress, index.fsapi?Math.floor((1024 * 1024 * 2)/ index.getChunksize()):2, function(e){
     updateProgress();
     setTimeout(downloadIndex, 200);
   })
