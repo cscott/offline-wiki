@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="progress-polyfill.css">
+
     <title>Offline Wiki</title>
     <!--      
       If you're reading this in the distant future, say, 2012, and you aren't preparing
@@ -96,7 +97,9 @@
    </p>
       </div>
       <article id="content">
+
         <h2>Introduction</h2>
+      
   <img id="xkcd" src="image/xkcd.png" usemap="#xkcd" border="0" style="float:right;margin-left:15px;" width="500" height="503" alt="" title="The obligatory xkcd strip." />
 <map id="xkcd" name="xkcd">
 <area shape="rect" coords="148,75,345,103" href="?Tacoma_Narrows_Bridge" alt="" title=""    />
@@ -114,7 +117,15 @@
 </map>
 
         This application saves and <b>downloads a copy</b> of nearly all of the textual content of the <b>English Wikipedia</b> locally so that it can be <b>accessed without internet connectivity</b>. It downloads and saves a compressed dump file and an index, 14MB for the small version and 1GB for the larger one (you can select which one from the <a href="?Special:Settings">settings</a>). Using WebWorkers and the File API, it seeks to a specific part of the compressed dump, decompresses it with a pure javascript implementation of LZMA and renders the Wikitext as HTML. All of this happens almost <b>instantly</b>.
-
+        <h2>Install</h2>
+        <p>
+          You don't really need to, just <b>bookmark this page</b> and you can use it any time with or without internet access. If you want the convenience of getting to this from your new tab page, install the <a href="https://chrome.google.com/webstore/detail/oehajijgnimplajibelflobkdfggmnka">chrome app</a>.
+        </p>
+        <p>
+        <a href="https://chrome.google.com/webstore/detail/oehajijgnimplajibelflobkdfggmnka">
+        <img src="http://code.google.com/chrome/webstore/images/branding/ChromeWebStore_Badge_v2_206x58.png">
+        </a>
+        </p>  
         <h2>Checking Compatibility</h2>
         <ul>
         <script>

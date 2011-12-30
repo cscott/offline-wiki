@@ -1,22 +1,15 @@
 {
   "name": "Offline Wiki",
   "description": "An offline wikipedia reader",
-  "version": "1",
+  "version": "1.0.5",
   "app": {
-    "urls": [
-      "http://offline-wiki.googlecode.com/git/app.html"
-    ],
     "launch": {
-      "web_url": "http://offline-wiki.googlecode.com/git/app.html"
+      "local_path": "redirect.html"
     }
   },
   "icons": {
     "16": "image/16.png",
     "64": "image/64.png",
     "128": "image/128.png"
-  },
-  "permissions": [
-    "unlimitedStorage",
-    "notifications"
-  ]
+  }
 }
