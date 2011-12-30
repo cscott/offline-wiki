@@ -693,7 +693,7 @@ function beginDownload(){
 
 function updateProgress(){
   var progress = (dump.progress() * dumpsize() + index.progress() * indexsize())/(dumpsize() + indexsize());
-  if(progress != 1 && dump.persistent && index.persistent){
+  if(progress < 1 && dump.persistent && index.persistent){
     updatePreview();
     document.getElementById('download').style.display = '';
     document.getElementById('progress').value = progress;
