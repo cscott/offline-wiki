@@ -208,7 +208,7 @@ function VirtualFile(name, size, chunksize, network){
   }else if(window.openDatabase){
     persistent = true;
     console.log('opening websql database');
-    sql = openDatabase(name+'_sql', '1.0', 'Offline Wiki '+name, 1024 * 1024 * 1024);
+    sql = openDatabase(name+'_sql', '1.0', 'Offline Wiki '+name, 20 * 1024 * 1024);
     console.log('got db');
     sql.transaction(function(tx){
       tx.executeSql('CREATE TABLE IF NOT EXISTS fs (chunk PRIMARY KEY, data)');
