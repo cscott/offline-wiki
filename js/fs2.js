@@ -186,26 +186,47 @@ function VirtualFile(name, size, chunksize, network){
         console.log("Quota Request error:", e)
       }); 
   }else if(indexedDB){
+    /*
+      I REALLY HAVE NO IDEA HOW TO DO THIS
+      PLZ FIX
+    */
     persistent = true;
     console.log('loading indexed db');
     if ('webkitIndexedDB' in window) {
       window.IDBTransaction = window.webkitIDBTransaction;
       window.IDBKeyRange = window.webkitIDBKeyRange;
     }
-    var req = indexedDB.open(name+'_indexed', 4);
-    req.onsuccess = function(e){
-      db = req.result; 
-      initialized = true;
-    }
-    req.onerror = function(e){
-      console.log('index db error', e.target.errorCode)
-    }
-    req.onupgradeneeded = function(e){
-      db = req.result;
-      if(!db.objectStoreNames.contains('fs')){
-        var store = db.createObjectStore('fs', {keyPath: 'chunk'});
+    var ver = 1;
+    function tryConnecting(){
+      var req = indexedDB.open(name+'_indexed', ver);
+      console.log('trying to open version', ver, name);
+      req.onsuccess = function(e){
+        var d = req.result; 
+        if(!d.objectStoreNames.contains('fs')){
+          console.log('fs not in db', name)
+          ver++;
+          tryConnecting();
+        }else{
+          db = d;
+          console.log('finally initialized', name);
+          initialized = true;
+        }
+      }
+      req.onerror = function(e){
+        if(e.target.errorCode == IDBDatabaseException.VERSION_ERR){
+          ver++;
+          tryConnecting();
+        }
+        console.log('index db error', e.target.errorCode, name)
+      }
+      req.onupgradeneeded = function(e){
+        var db = req.result;
+        if(!db.objectStoreNames.contains('fs')){
+          var store = db.createObjectStore('fs', {keyPath: 'chunk'});
+        }
       }
     }
+    tryConnecting()
   }else if(window.openDatabase){
     persistent = true;
     console.log('opening websql database');
