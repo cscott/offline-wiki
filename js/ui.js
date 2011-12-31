@@ -1,11 +1,12 @@
 
 function incrementSlider(pagesDelta){
 	var step = document.getElementById('slider').step - 0;
-	
+	document.getElementById('slider').value -= pagesDelta * -step;
+	/*
 	do {
   	document.getElementById('slider').value -= pagesDelta * -step;
 	} while((!index.checkBlock(+document.getElementById('slider').value)));
-	
+	*/
 	updateIndex();
 }
 

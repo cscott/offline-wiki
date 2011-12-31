@@ -290,9 +290,9 @@ function VirtualFile(name, size, chunksize, network){
   }
 
   function readChunk(chunk, callback, redownload){
-    if(!initialized) return setTimeout(function(){
+   /* if(!initialized) return setTimeout(function(){
       readChunk(chunk, callback, redownload);
-    }, 100);
+    }, 100);*/
     chunk = Math.max(0, chunk);
     //console.log("reading chunk", chunk, name);
     readChunkPersistent(chunk, function(e){
