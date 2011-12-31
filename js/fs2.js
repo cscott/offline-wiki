@@ -187,23 +187,21 @@ function VirtualFile(name, size, chunksize, network){
       }); 
   }else if(indexedDB){
     persistent = true;
-
+    console.log('loading indexed db');
     if ('webkitIndexedDB' in window) {
       window.IDBTransaction = window.webkitIDBTransaction;
       window.IDBKeyRange = window.webkitIDBKeyRange;
     }
-    var req = indexedDB.open(name+'_indexed');
+    var req = indexedDB.open(name+'_indexed', 4);
     req.onsuccess = function(e){
-      var v = '2.718';
-      db = e.target.result;
-      if(v != db.version){
-        var setVrequest = db.setVersion(v);
-        setVrequest.onsuccess = function(e){
-          var store = db.createObjectStore('fs', {keyPath: 'chunk'});
-          initialized = true;
-        }
-      }else{
-        initialized = true;
+      db = req.result; 
+      initialized = true;
+    }
+    req.onupgradeneeded = function(e){
+      var db = req.result;
+      BLAG = (db.objectStoreNames);
+      if(!db.objectStoreNames.contains('fs')){
+        var store = db.createObjectStore('fs', {keyPath: 'chunk'});
       }
     }
   }else if(window.openDatabase){
@@ -543,10 +541,11 @@ function VirtualFile(name, size, chunksize, network){
   }
   
   function resetDB(){
-    var req = db.setVersion('0.1');
-    req.onsuccess = function(){
+    var req = indexedDB.open(name+'_indexed', 1);
+    req.onupgradeneeded = function(e){
+      var db = req.result;
       db.deleteObjectStore('fs');
-      console.log('successfully deleted object store');
+      console.log('successfully deleted database');
     }
   }
   
