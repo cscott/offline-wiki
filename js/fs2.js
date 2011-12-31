@@ -168,7 +168,7 @@ function VirtualFile(name, size, chunksize, network){
   var rfs = (window.requestFileSystem||window.webkitRequestFileSystem);
   var indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB;
   if(rfs && window.webkitStorageInfo){
-    persistent = true;
+    persistent = 1;
     webkitStorageInfo.requestQuota(webkitStorageInfo.PERSISTENT, defaultsize,
       function(grantedQuota){
         console.log("Granted quota:", grantedQuota)
@@ -190,45 +190,31 @@ function VirtualFile(name, size, chunksize, network){
       I REALLY HAVE NO IDEA HOW TO DO THIS
       PLZ FIX
     */
-    persistent = true;
+    persistent = 2;
     console.log('loading indexed db');
     if ('webkitIndexedDB' in window) {
       window.IDBTransaction = window.webkitIDBTransaction;
       window.IDBKeyRange = window.webkitIDBKeyRange;
     }
-    var ver = 1;
-    function tryConnecting(){
-      var req = indexedDB.open(name+'_indexed', ver);
-      console.log('trying to open version', ver, name);
-      req.onsuccess = function(e){
-        var d = req.result; 
-        if(!d.objectStoreNames.contains('fs')){
-          console.log('fs not in db', name)
-          ver++;
-          tryConnecting();
-        }else{
-          db = d;
-          console.log('finally initialized', name);
-          initialized = true;
-        }
-      }
-      req.onerror = function(e){
-        if(e.target.errorCode == IDBDatabaseException.VERSION_ERR){
-          ver++;
-          tryConnecting();
-        }
-        console.log('index db error', e.target.errorCode, name)
-      }
-      req.onupgradeneeded = function(e){
-        var db = req.result;
-        if(!db.objectStoreNames.contains('fs')){
-          var store = db.createObjectStore('fs', {keyPath: 'chunk'});
-        }
+    var req = indexedDB.open(name+'_indexed', 6);
+    console.log('trying to open version', 6, name);
+    req.onsuccess = function(e){
+      db = req.result;
+      initialized = true;
+    }
+    req.onerror = function(e){
+      console.log('index db error', e.target.errorCode, name)
+    }
+    req.onupgradeneeded = function(e){
+      var db = req.result;
+      console.log('db needs upgrade',name);
+      if(!db.objectStoreNames.contains('fs')){
+        console.log('creating store',name);
+        var store = db.createObjectStore('fs', {keyPath: 'chunk'});
       }
     }
-    tryConnecting()
   }else if(window.openDatabase){
-    persistent = true;
+    persistent = 3;
     console.log('opening websql database');
     sql = openDatabase(name+'_sql', '1.0', 'Offline Wiki '+name, 20 * 1024 * 1024);
     console.log('got db');
@@ -546,11 +532,11 @@ function VirtualFile(name, size, chunksize, network){
   }
   
   function reset(){
-    if(db){
-      resetDB(); 
-    }else if(fileEntry){
+    if(persistent == 1){
       resetFile();
-    }else if(sql){
+    }else if(persistent == 2){
+      resetDB(); 
+    }else if(persistent == 3){
       resetSql();
     }
     localStorage[name+'_bitset'] = '';
@@ -564,8 +550,9 @@ function VirtualFile(name, size, chunksize, network){
   }
   
   function resetDB(){
-    
-    console.log('could not delete database', name);
+    console.log('tring to delete database', name);
+    indexedDB.deleteDatabase(name+'_indexed');
+    console.log('deleted database', name);
   }
   
   function resetSql(){
