@@ -5,6 +5,7 @@ body {
   color: #111111;
   background-color: #e8e8e8;
   background-image: url(image/bg.png);
+  background-attachment: fixed; 
   margin-right: 20px;
   margin-left: 20px;
   margin-top: 0px;
