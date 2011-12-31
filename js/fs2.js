@@ -199,7 +199,6 @@ function VirtualFile(name, size, chunksize, network){
     }
     req.onupgradeneeded = function(e){
       var db = req.result;
-      BLAG = (db.objectStoreNames);
       if(!db.objectStoreNames.contains('fs')){
         var store = db.createObjectStore('fs', {keyPath: 'chunk'});
       }
