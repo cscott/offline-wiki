@@ -197,8 +197,11 @@ function VirtualFile(name, size, chunksize, network){
       db = req.result; 
       initialized = true;
     }
+    req.onerror = function(e){
+      console.log('index db error', e.target.errorCode)
+    }
     req.onupgradeneeded = function(e){
-      var db = req.result;
+      db = req.result;
       if(!db.objectStoreNames.contains('fs')){
         var store = db.createObjectStore('fs', {keyPath: 'chunk'});
       }
@@ -315,7 +318,7 @@ function VirtualFile(name, size, chunksize, network){
     //console.log('reading', end-start,'chunks starting at',start);
     
     readChunksXHR(start, end - start, function(e){
-      //console.log("read from XHR", name, chunk);
+      //console.log("read from XHR", name);
       if(e != false) writeChunksPersistent(start, e, callback);
     });
     
@@ -360,7 +363,7 @@ function VirtualFile(name, size, chunksize, network){
     }else if(db || sql){
       writeChunksDB(chunk, data, callback);
     }else{
-      callback(data);
+      callback(data, -1);
     }
   }
   
@@ -540,12 +543,8 @@ function VirtualFile(name, size, chunksize, network){
   }
   
   function resetDB(){
-    var req = indexedDB.open(name+'_indexed', 1);
-    req.onupgradeneeded = function(e){
-      var db = req.result;
-      db.deleteObjectStore('fs');
-      console.log('successfully deleted database');
-    }
+    
+    console.log('could not delete database', name);
   }
   
   function resetSql(){
@@ -577,6 +576,7 @@ function VirtualFile(name, size, chunksize, network){
     terminate: function(){
       terminate = true
     },
+    db: function(){return (db || fileEntry || sql)},
     reset: reset
   };
 }
@@ -758,7 +758,8 @@ function downloadIndex(){
   while(index.checkChunk(index_progress)) index_progress++;
   if(index_progress >= index.getChunks()) return;
   //index.readChunk(index_progress, function(){
-  index.downloadContiguousChunks(index_progress, Math.floor((1024 * 1024 * 1)/ index.getChunksize()), function(e){
+  index.downloadContiguousChunks(index_progress, Math.floor((1024 * 1024 * 1)/ index.getChunksize()), function(e, fail){
+    if(fail == -1) return;
     updateProgress();
     downloading_index = true;  
     setTimeout(downloadIndex, 200);
