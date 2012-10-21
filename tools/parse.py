@@ -3,7 +3,7 @@ import urllib
 #9.662s, 10.277s, 0.104s
 
 popular = {}
-for line in open('top400k.txt','r'):
+for line in open('top2012.txt','r'):
   popular[urllib.unquote(line.split()[0].replace('_',' '))] = True
 count = 0
 action = 0

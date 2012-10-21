@@ -39,6 +39,18 @@ var dumps = {
       'aa,ab,ac,ad,ae,af,ag,ah,ai,aj,ak'.split(',')[Math.floor(ptr / CHUNK_SIZE)],
         ptr % CHUNK_SIZE];
     }
+  },
+  local_twelve: {
+  	indexsize: 40302,
+  	dumpsize: 21085934,
+  	indexurl: '/offline-wiki/tools/2012.index',
+  	dumpurl: '/offline-wiki/tools/2012.lzma'
+  },
+  twelve: {
+  	indexsize: 40302,
+  	dumpsize: 21085934,
+  	indexurl: 'http://offline-wiki.googlecode.com/files/2012.index',
+  	dumpurl: 'http://offline-wiki.googlecode.com/files/2012.lzma'
   }
 
 }
@@ -67,7 +79,7 @@ function switch_dump(name, dft){
 //if(location.host=='offline-wiki.googlecode.com'){
 //  switch_dump(localStorage.dumpname, 'leet');
 //}else{
-  switch_dump(localStorage.dumpname, 'leet');
+  switch_dump(localStorage.dumpname, 'twelve');
 //}
 
 
