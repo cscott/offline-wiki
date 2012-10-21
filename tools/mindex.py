@@ -7,8 +7,8 @@ xartstart = 0
 artstart = 0
 xbody = ''
 buff = ''
-out = open('semega.lzma', 'w')
-index = open('semega.index', 'w')
+out = open('simple.lzma', 'w')
+index = open('simple.index', 'w')
 
 def compress(s):
   proc = subprocess.Popen(['lzma', '-f'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)

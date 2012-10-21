@@ -692,6 +692,12 @@ var dumps = {
     dumpsize: 21085934,
     indexurl: 'http://offline-wiki.googlecode.com/files/2012.index',
     dumpurl: 'http://offline-wiki.googlecode.com/files/2012.lzma'
+  },
+  simple: {
+    indexsize: 4367757,
+    dumpsize: 48357515,
+    indexurl: 'http://offline-wiki.googlecode.com/files/simple.index',
+    dumpurl: 'http://offline-wiki.googlecode.com/files/simple.lzma'
   }
 }
 

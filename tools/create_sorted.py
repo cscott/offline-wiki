@@ -1,5 +1,5 @@
 import sys
-f = open('500k_popular_articles.txt', 'r')
+f = open('popular_simple.txt', 'r')
 for line in sys.stdin:
   (title, start, end) = line.split(' ')
   start = int(start)
