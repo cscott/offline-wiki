@@ -65,6 +65,7 @@ function VirtualFile(name, size, chunksize, network){
   var file, fileEntry, db, sql;
   var persistent = false;
   var terminate = false;
+  var blobType;
   
   function testSliceType(){
     var bb = createBlobBuilder();
