@@ -698,6 +698,17 @@ var dumps = {
     dumpsize: 48357515,
     indexurl: 'http://offline-wiki.googlecode.com/files/simple.index',
     dumpurl: 'http://offline-wiki.googlecode.com/files/simple.lzma'
+  },
+  semega: {
+    indexsize: 12513256,
+    dumpsize: 1326480986,
+    indexurl: 'http://offline-wiki.googlecode.com/files/semega.index',
+    dumpurl: function(ptr){
+      var CHUNK_SIZE = 161803398;
+      return ['http://offline-wiki.googlecode.com/files/semega_' +
+      'aa,ab,ac,ad,ae,af,ag,ah,ai'.split(',')[Math.floor(ptr / CHUNK_SIZE)],
+        ptr % CHUNK_SIZE];
+    }
   }
 }
 

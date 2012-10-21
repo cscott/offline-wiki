@@ -20,3 +20,6 @@ bzcat enwiki-20111201-pages-articles.xml.bz2 | python parse.py > popular_article
 python index.py < articles_1337.txt | sort | python create_sorted.py > sorted_1337.txt
 
 python mindex.py < sorted_1337.txt
+
+
+split --bytes=161803398 semega.lzma semega
