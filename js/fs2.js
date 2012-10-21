@@ -68,15 +68,20 @@ function VirtualFile(name, size, chunksize, network){
   
   function testSliceType(){
     var bb = createBlobBuilder();
-    bb.append("elitistland");
-    var number = bb.getBlob().slice(3,5).size;
-    if(number == 5){
-      blobType = 1
-    }else if(number == 2){
+    if(!bb && window.Blob){
       blobType = 2;
     }else{
-      alert("Apparently the future, assuming you are in the future, is really messed up by mid-2011 standards.");
+      bb.append("elitistland");
+      var number = bb.getBlob().slice(3,5).size;
+      if(number == 5){
+        blobType = 1
+      }else if(number == 2){
+        blobType = 2;
+      }else{
+        alert("Apparently the future, assuming you are in the future, is really messed up by mid-2011 standards.");
+      }
     }
+    
   }
 
   
@@ -102,6 +107,16 @@ function VirtualFile(name, size, chunksize, network){
       return new WebKitBlobBuilder();
     }else if(window.MozBlobBuilder){
       return new MozBlobBuilder();
+    }
+  }
+
+  function createBlobFromBuffer(buffer){
+    var bb = createBlobBuilder();
+    if(bb){
+        bb.append(buffer);
+        return bb.getBlob()
+    }else{
+      return new Blob([buffer])
     }
   }
 
@@ -272,8 +287,8 @@ function VirtualFile(name, size, chunksize, network){
       if(buffer == false){
         callback(false)
       }else if(window.FileReader){
-        var bb = createBlobBuilder();
-        bb.append(buffer);
+
+        var blob = createBlobFromBuffer(buffer);
         var fr = new FileReader();
         fr.onload = function(){
           callback(fr.result);
@@ -282,7 +297,7 @@ function VirtualFile(name, size, chunksize, network){
           console.debug("file read error");
           console.error(e)
         }
-        fr.readAsText(bb.getBlob())
+        fr.readAsText(blob)
       }else{
         var arr = new Uint8Array(buffer);
         for(var i = 0, s = ''; i < arr.length; i++)
@@ -427,9 +442,7 @@ function VirtualFile(name, size, chunksize, network){
           callback(data);
         }
       }
-      var bb = createBlobBuilder();
-      bb.append(data);
-      var blob = bb.getBlob();
+      var blob = createBlobFromBuffer(data)
       
       if(chunksize * chunk > fileWriter.length){
         fileWriter.truncate(chunksize * chunk);
